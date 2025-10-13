@@ -1,0 +1,54 @@
+<table class="table table-striped table-hover" id="bulk-table">
+    <thead>
+        <tr>
+            <th><input type="checkbox" id="select-all"></th>
+            <th>Email</th>
+            <th>Outbound Caller ID</th>
+            <th>Inline Edit</th>
+            <th>Status</th>
+            <th>Updated By</th>
+            <th>Timestamp</th>
+            <th>Update</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if uploaded_data %}
+            {% for row in uploaded_data %}
+            <tr data-email="{{ row.email }}">
+                <td><input type="checkbox" class="row-checkbox" data-email="{{ row.email }}"></td>
+                <td>{{ row.email }}</td>
+                <td class="caller-id-display">{{ row.outbound_caller_id }}</td>
+                <td>
+                    <input type="text" class="form-control form-control-sm inline-cid"
+                           value="{{ row.outbound_caller_id }}" style="width: 150px;">
+                </td>
+                <td>
+                    {% if row.status %}
+                        {% if row.status == "Success" %}
+                            <span class="badge bg-success">Success</span>
+                        {% else %}
+                            <span class="badge bg-danger" title="{{ row.reason or 'Unknown error' }}">Failed</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge bg-secondary">Pending</span>
+                    {% endif %}
+                </td>
+                <td class="updated-by">{{ row.updated_by or '-' }}</td>
+                <td class="updated-ts">{{ row.updated_ts or '-' }}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary btn-update-row">Update</button>
+                </td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td colspan="8" class="text-muted text-center">No recent updates to show.</td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
+
+
+
+
+

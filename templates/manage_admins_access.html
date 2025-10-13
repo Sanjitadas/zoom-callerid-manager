@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="fw-bold mb-4">Manage Admins & Allowed Users</h2>
+
+    <div class="row g-4">
+        <!-- Admins Card -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Admins</h5>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addAdminModal">
+                        <i class="bi bi-person-plus"></i> Add Admin
+                    </button>
+                </div>
+                <div class="card-body table-responsive">
+                    <table class="table table-hover align-middle" id="adminsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Email</th>
+                                <th>Created At</th>
+                                <th>Password</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for admin in admins %}
+                            <tr id="admin-{{ admin.id }}">
+                                <td>{{ admin.email }}</td>
+                                <td>{{ admin.created_at.strftime('%Y-%m-%d %H:%M') if admin.created_at else '-' }}</td>
+                                <td id="admin-password-{{ admin.id }}">{{ admin.default_password or '-' }}</td>
+                                <td>
+                                    {% if session.get('user_email')|lower != admin.email|lower %}
+                                    <button class="btn btn-sm btn-warning me-1" onclick="resetPassword('admin', {{ admin.id }})">
+                                        <i class="bi bi-key"></i>
+                                    </button>
+                                    <form method="POST" action="{{ url_for('main.delete_admin', admin_id=admin.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this admin?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <span class="text-muted">You</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="text-center text-muted">No admins found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Allowed Users Card -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Allowed Users</h5>
+                    <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                        <i class="bi bi-person-check"></i> Add User
+                    </button>
+                </div>
+                <div class="card-body table-responsive">
+                    <table class="table table-hover align-middle" id="usersTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Email</th>
+                                <th>Created At</th>
+                                <th>Password</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in access_users %}
+                            <tr id="user-{{ user.id }}">
+                                <td>{{ user.email }}</td>
+                                <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '-' }}</td>
+                                <td id="user-password-{{ user.id }}">{{ user.default_password or '-' }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning me-1" onclick="resetPassword('user', {{ user.id }})">
+                                        <i class="bi bi-key"></i>
+                                    </button>
+                                    <form method="POST" action="{{ url_for('main.delete_access_user', user_id=user.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove this user?')">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="text-center text-muted">No users found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Admin Modal -->
+<div class="modal fade" id="addAdminModal" tabindex="-1" aria-labelledby="addAdminModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" action="{{ url_for('main.manage_admins_access') }}">
+        <input type="hidden" name="action" value="add_admin">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addAdminModalLabel">Add Admin</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="email" name="email" class="form-control mb-2" placeholder="Admin Email" required>
+                <input type="text" name="password" class="form-control" placeholder="Set Password" required>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Add Admin</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Allowed User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" action="{{ url_for('main.manage_admins_access') }}">
+        <input type="hidden" name="action" value="add_access_user">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addUserModalLabel">Add Allowed User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="email" name="email" class="form-control mb-2" placeholder="User Email" required>
+                <input type="text" name="password" class="form-control" placeholder="Set Password" required>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-success">Add User</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function resetPassword(type, id) {
+    if (!confirm('Are you sure you want to reset the password?')) return;
+
+    fetch(`/reset_password/${type}/${id}`, { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const pwdCell = document.getElementById(`${type}-password-${id}`);
+                if (pwdCell) pwdCell.innerText = data.new_password;
+                alert('Password reset successfully!');
+            } else {
+                alert('Error resetting password: ' + data.message);
+            }
+        })
+        .catch(err => alert('Request failed: ' + err));
+}
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

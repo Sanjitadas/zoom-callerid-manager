@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    body {
+        background-color: #3b82f6; /* Blue background */
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .login-card {
+        max-width: 400px;
+        border-radius: 15px;
+        padding: 40px 30px;
+        background-color: white;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        position: relative;
+        text-align: center;
+    }
+    .user-icon {
+        width: 80px;
+        height: 80px;
+        background-color: #3b82f6;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: -70px auto 20px auto;
+        color: white;
+        font-size: 36px;
+    }
+    .illustration {
+        position: absolute;
+        width: 80px;
+    }
+    .illustration.top-left { top: -20px; left: -20px; }
+    .illustration.top-right { top: -20px; right: -20px; }
+    .illustration.bottom-left { bottom: -20px; left: -20px; }
+    .illustration.bottom-right { bottom: -20px; right: -20px; }
+</style>
+
+<div class="d-flex align-items-center justify-content-center vh-100">
+    <div class="login-card">
+        <!-- Circular user icon -->
+        <div class="user-icon">
+            <i class="bi bi-person-fill"></i>
+        </div>
+
+        <h2 class="fw-bold mb-2">Welcome to Zoom Internal Tool</h2>
+        <p class="text-muted mb-4">Please login to continue</p>
+
+        <form method="post" action="{{ url_for('login') }}">
+            <div class="mb-3">
+                <input type="email" class="form-control" name="email" placeholder="Enter your email" required>
+            </div>
+            <div class="mb-3">
+                <input type="password" class="form-control" name="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 fw-bold">Login</button>
+        </form>
+
+        <!-- Minimal flat illustrations -->
+        <img src="{{ url_for('static', filename='images/Zoom Welcome.png') }}" class="illustration top-left" alt="Person 1">
+        
+    </div>
+</div>
+{% endblock %}
+
+
+

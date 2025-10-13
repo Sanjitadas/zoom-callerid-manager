@@ -1,0 +1,148 @@
+<!-- templates/index.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Dashboard Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-primary">Admin Dashboard</h2>
+  </div>
+
+  <!-- Unified Summary Cards -->
+  <div class="row mb-4">
+    <div class="col-md-4 mb-3">
+      <div class="card text-center p-3 shadow-sm">
+        <h5>Total Admins</h5>
+        <h2 id="total-admins">{{ total_admins }}</h2>
+        <i class="bi bi-person-badge-fill fs-3 text-primary"></i>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card text-center p-3 shadow-sm">
+        <h5>Allowed Users</h5>
+        <h2 id="total-allowed-users">{{ total_allowed_users }}</h2>
+        <i class="bi bi-people-fill fs-3 text-success"></i>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card text-center p-3 shadow-sm">
+        <h5>Caller ID Updates</h5>
+        <h2 id="total-callerid-updates">{{ total_callerid_updates }}</h2>
+        <i class="bi bi-telephone-fill fs-3 text-warning"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Allowed Users Section -->
+  <div class="mb-5">
+    <h5 class="mb-3">Allowed Users</h5>
+    <div id="allowed-users-table">
+      {% include "partials/allowed_users_table.html" %}
+    </div>
+  </div>
+
+  <!-- Caller ID Updates Section -->
+  <div class="mb-5">
+    <h5 class="mb-3">Caller ID Updates</h5>
+    <div id="callerid-updates-table">
+      {% include "partials/callerid_updates_table.html" %}
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ---------- Auto-refresh Dashboard ----------
+  async function refreshLiveTables(){
+    try {
+      const res = await fetch("{{ url_for('main.ajax_refresh_dashboard') }}");
+      const data = await res.json();
+      if(data.status === "success"){
+        // Update Allowed Users Table
+        const allowedTableBody = document.querySelector("#allowed-users-table");
+        if(allowedTableBody) allowedTableBody.innerHTML = data.allowed_users_html;
+
+        // Update Caller ID Updates Table
+        const calleridTableBody = document.querySelector("#callerid-updates-table");
+        if(calleridTableBody) calleridTableBody.innerHTML = data.callerid_updates_html;
+
+        // Update Counts
+        document.getElementById("total-admins").innerText = data.total_admins;
+        document.getElementById("total-allowed-users").innerText = data.total_allowed_users;
+        document.getElementById("total-callerid-updates").innerText = data.total_callerid_updates;
+      }
+    } catch(err){
+      console.error("Failed to refresh dashboard", err);
+    }
+  }
+
+  // Auto-refresh every 30 seconds
+  setInterval(refreshLiveTables, 30000);
+</script>
+
+<style>
+  /* Optional: Custom Dark Theme if using base.html theme toggle */
+  .dark-theme {
+    background-color: #121212;
+    color: #e0e0e0;
+  }
+  .dark-theme .card {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+  }
+  .dark-theme table.table {
+    color: #e0e0e0;
+  }
+  .dark-theme thead.table-light {
+    background-color: #2c2c2c !important;
+    color: #e0e0e0 !important;
+  }
+</style>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

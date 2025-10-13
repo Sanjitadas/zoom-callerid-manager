@@ -1,0 +1,143 @@
+<!-- partials/callerid_updates_table.html -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">Caller ID Updates</h5>
+  </div>
+  <div class="card-body table-responsive">
+    {% if updates %}
+    <table class="table table-hover align-middle" id="callerid-updates-table">
+      <thead class="table-light">
+        <tr>
+          <th>User Email</th>
+          <th>Caller ID</th>
+          <th>Status</th>
+          <th>Updated By</th>
+          <th>Timestamp</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for update in updates %}
+        <tr>
+          <td>{{ update.user_id }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <input type="text" class="form-control form-control-sm" 
+                     id="callerid-{{ update.user_id }}" 
+                     value="{{ update.caller_id_number }}" readonly>
+              <button class="btn btn-sm btn-outline-secondary edit-cid-btn" 
+                      data-email="{{ update.user_id }}" 
+                      data-cid="{{ update.caller_id_number }}" 
+                      data-bs-toggle="modal" data-bs-target="#editCIDModal"
+                      title="Edit Caller ID">
+                <i class="fas fa-cog"></i>
+              </button>
+            </div>
+          </td>
+          <td>{{ update.status }}</td>
+          <td>{{ update.updated_by }}</td>
+          <td>{{ update.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+          <td>
+            <button class="btn btn-sm btn-primary update-cid-btn" 
+                    data-email="{{ update.user_id }}">
+              <i class="bi bi-check-circle"></i> Update
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted text-center">No caller ID updates yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Edit Caller ID Modal -->
+<div class="modal fade" id="editCIDModal" tabindex="-1" aria-labelledby="editCIDModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-card">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editCIDModalLabel">Edit Caller ID</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editCIDForm">
+          <div class="mb-3">
+            <label for="edit-cid-input" class="form-label">Caller ID</label>
+            <input type="text" class="form-control" id="edit-cid-input" required>
+          </div>
+          <input type="hidden" id="edit-cid-email">
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="save-cid-btn">
+          <i class="bi bi-save"></i> Save
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function refreshLiveTables(){
+    // Simple fallback
+    location.reload();
+}
+
+(function(){
+  document.addEventListener("click", function(e){
+    if(e.target.closest(".edit-cid-btn")){
+      const btn = e.target.closest(".edit-cid-btn");
+      const email = btn.dataset.email;
+      const cid = btn.dataset.cid;
+      document.getElementById("edit-cid-input").value = cid;
+      document.getElementById("edit-cid-email").value = email;
+    }
+  });
+
+  document.getElementById("save-cid-btn")?.addEventListener("click", async function(){
+    const email = document.getElementById("edit-cid-email").value;
+    const callerID = document.getElementById("edit-cid-input").value.trim();
+    if(!callerID){ alert("Caller ID cannot be empty!"); return; }
+
+    try{
+      const res = await fetch("{{ url_for('main.ajax_update_callerid') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, caller_id: callerID })
+      });
+      const data = await res.json();
+      if(data.status === "success"){
+        bootstrap.Modal.getInstance(document.getElementById("editCIDModal")).hide();
+        refreshLiveTables();
+      } else {
+        alert(data.message || "Unknown error");
+      }
+    } catch(err){ console.error(err); alert("Failed to update Caller ID."); }
+  });
+
+  document.addEventListener("click", async function(e){
+    if(e.target.closest(".update-cid-btn")){
+      const btn = e.target.closest(".update-cid-btn");
+      const email = btn.dataset.email;
+      const input = document.getElementById(`callerid-${email}`);
+      const callerID = input.value.trim();
+      if(!callerID){ alert("Caller ID cannot be empty!"); return; }
+
+      try{
+        const res = await fetch("{{ url_for('main.ajax_update_callerid') }}", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, caller_id: callerID })
+        });
+        const data = await res.json();
+        if(data.status === "success"){
+          refreshLiveTables();
+        } else alert(data.message || "Unknown error");
+      } catch(err){ console.error(err); alert("Failed to update Caller ID."); }
+    }
+  });
+})();
+</script>

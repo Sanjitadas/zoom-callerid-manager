@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-4">
+    <h2 class="mb-4 text-primary">Outbound Caller ID Update</h2>
+
+    <!-- Single Update Form -->
+    <div class="card mb-3 p-3">
+        <form id="single-update-form" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <input type="email" name="email" id="single-email" class="form-control" placeholder="User email" required>
+            </div>
+            <div class="col-md-4">
+                <input type="text" name="caller_id" id="single-caller-id" class="form-control" placeholder="Caller ID (e.g. +123456789)" required>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary">Update Single</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bulk Upload Section -->
+    <div class="card mb-4 p-3 shadow-sm">
+        <form id="bulk-upload-form" enctype="multipart/form-data">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <input type="file" name="file" id="bulk-file" class="form-control" accept=".xlsx,.xls" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-success">Upload</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div class="mb-3 d-flex gap-2 align-items-center">
+        <button class="btn btn-primary" id="apply-bulk-btn" disabled>Apply Bulk Update</button>
+        <button class="btn btn-secondary" id="download-bulk-btn" disabled>Download Updated Template</button>
+        <span class="text-muted" id="bulk-status"></span>
+    </div>
+
+    <!-- Updates Table -->
+    <div id="bulk-table-container">
+        {% include 'partials/bulk_table.html' %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // ---------- Single Update ----------
+    $("#single-update-form").submit(function(e) {
+        e.preventDefault();
+        const email = $("#single-email").val().trim();
+        const caller_id = $("#single-caller-id").val().trim();
+        if (!email || !caller_id) { alert("Email and Caller ID required."); return; }
+
+        $.ajax({
+            url: "{{ url_for('main.ajax_update_callerid') }}",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ email, caller_id }),
+            success: function(resp) {
+                if(resp.status === "success") {
+                    const row = $(`tr[data-email='${email}']`);
+                    if(row.length){
+                        row.find(".caller-id-display").text(caller_id);
+                        row.find(".inline-cid").val(caller_id);
+                        row.find("td:nth-child(5)").html('<span class="badge bg-success">Success</span>');
+                        row.find(".updated-by").text(resp.updated_by);
+                        row.find(".updated-ts").text(resp.updated_ts);
+                    } else location.reload();
+                } else alert(resp.message || "Failed");
+            },
+            error: function(err){ alert("Server error"); console.error(err); }
+        });
+    });
+
+    // ---------- Bulk Upload ----------
+    $("#bulk-upload-form").submit(function(e) {
+        e.preventDefault();
+        let formData = new FormData(this);
+        $.ajax({
+            url: "{{ url_for('main.ajax_bulk_update_file') }}",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(resp) {
+                if(resp.status==="success"){
+                    $("#bulk-table-container").html(resp.updated_table_html);
+                    $("#bulk-status").text("✅ File uploaded successfully.");
+                    $("#apply-bulk-btn").prop("disabled", false);
+                    $("#download-bulk-btn").prop("disabled", true);
+                } else alert(resp.message || "Upload failed");
+            },
+            error: function(err){ alert("Upload failed"); console.error(err); }
+        });
+    });
+
+    // ---------- Apply Bulk Update ----------
+    $("#apply-bulk-btn").click(function(){
+        let selectedEmails = $(".row-checkbox:checked").map(function(){ return $(this).data("email"); }).get();
+        if(selectedEmails.length===0){ alert("Select at least one user"); return; }
+
+        $(this).prop("disabled", true);
+        $("#bulk-status").text("⏳ Applying updates...");
+
+        $.ajax({
+            url: "{{ url_for('main.ajax_apply_bulk_update') }}",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ selected_users: selectedEmails }),
+            success: function(resp){
+                if(resp.status==="success"){
+                    resp.results.forEach(r => {
+                        let row = $(`tr[data-email='${r.email}']`);
+                        let statusCell = row.find("td:nth-child(5)");
+                        statusCell.html(r.success
+                            ? `<span class="badge bg-success">Success</span>`
+                            : `<span class="badge bg-danger" title="${r.reason || 'Failed'}">Failed</span>`);
+                        row.find(".caller-id-display").text(r.caller_id);
+                        row.find(".inline-cid").val(r.caller_id);
+                        row.find(".updated-by").text(r.updated_by);
+                        row.find(".updated-ts").text(r.updated_ts);
+                    });
+                    $("#bulk-status").text(`✅ ${resp.message}`);
+                    $("#download-bulk-btn").prop("disabled", false);
+                } else {
+                    alert(resp.message || "Bulk update failed");
+                    $("#apply-bulk-btn").prop("disabled", false);
+                }
+            },
+            error: function(err){ alert("Bulk update failed"); console.error(err); $("#apply-bulk-btn").prop("disabled", false);}
+        });
+    });
+
+    // ---------- Download Bulk Template ----------
+    $("#download-bulk-btn").click(function(){
+        $.ajax({
+            url: "{{ url_for('main.ajax_download_updated_template') }}",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({}),
+            xhrFields: { responseType: 'blob' },
+            success: function(blob, status, xhr){
+                let filename = "bulk_updated_template.xlsx";
+                const disposition = xhr.getResponseHeader('Content-Disposition');
+                if(disposition && disposition.indexOf('attachment')!=-1){
+                    const match = disposition.match(/filename="?([^"]+)"?/);
+                    if(match && match[1]) filename=match[1];
+                }
+                let link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                $("#bulk-status").text("✅ Download completed.");
+            },
+            error: function(err){ alert("Download failed"); console.error(err); }
+        });
+    });
+
+    // ---------- Inline Row Update ----------
+    $("#bulk-table-container").on("click",".btn-update-row",function(){
+        let row = $(this).closest("tr");
+        let email = row.data("email");
+        let cid = row.find(".inline-cid").val().trim();
+        if(!cid){ alert("Caller ID cannot be empty"); return; }
+
+        $.ajax({
+            url: "{{ url_for('main.ajax_update_row') }}",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ email, caller_id: cid }),
+            success: function(resp){
+                if(resp.status==="success"){
+                    row.find(".caller-id-display").text(cid);
+                    row.find("td:nth-child(5)").html('<span class="badge bg-success">Success</span>');
+                    row.find(".updated-by").text(resp.updated_by);
+                    row.find(".updated-ts").text(resp.updated_ts);
+                } else alert(resp.message || "Failed");
+            },
+            error: function(err){ alert("Server error"); console.error(err); }
+        });
+    });
+
+    // ---------- Select/Deselect All ----------
+    $("#bulk-table-container").on("click","#select-all",function(){
+        $(".row-checkbox").prop("checked", this.checked);
+    });
+});
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
