@@ -1,0 +1,209 @@
+[2025-10-13 22:37:27,872] INFO in _internal: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[2025-10-13 22:37:27,874] INFO in _internal: [33mPress CTRL+C to quit[0m
+[2025-10-13 22:37:32,538] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 22:37:32] "GET / HTTP/1.1" 200 -
+[2025-10-13 22:37:36,674] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 22:37:36] "GET /bulk_update HTTP/1.1" 200 -
+[2025-10-13 22:37:44,722] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 22:37:44] "GET /bulk_update?email=Rajeev.Gupta@BlackBox.com&caller_id=2185080286 HTTP/1.1" 200 -
+[2025-10-13 22:37:48,097] INFO in routes: Activity logs viewed by admin
+[2025-10-13 22:37:48,109] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 22:37:48] "GET /activity_logs HTTP/1.1" 200 -
+[2025-10-13 22:38:34,069] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 22:38:34] "GET /bulk_update?file=test+zoom+update.xlsx HTTP/1.1" 200 -
+[2025-10-13 23:12:01,196] INFO in _internal: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[2025-10-13 23:12:01,197] INFO in _internal: [33mPress CTRL+C to quit[0m
+[2025-10-13 23:12:08,935] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:12:08] "[32mGET / HTTP/1.1[0m" 302 -
+[2025-10-13 23:12:08,975] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:12:08] "GET /login HTTP/1.1" 200 -
+[2025-10-13 23:12:09,300] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:12:09] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+[2025-10-13 23:12:21,871] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:12:21] "[32mPOST /login HTTP/1.1[0m" 302 -
+[2025-10-13 23:12:21,944] ERROR in app: Exception on / [GET]
+Traceback (most recent call last):
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\routes.py", line 39, in decorated
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\routes.py", line 49, in decorated
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\routes.py", line 165, in index
+    return render_template("index.html",
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\templates\index.html", line 2, in top-level template code
+    {% extends "base.html" %}
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\templates\base.html", line 108, in top-level template code
+    <a href="{{ url_for('main.bulk_update_page') }}" class="navlink {{ 'active' if request.path == url_for('main.bulk_update_page') else '' }}">
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 1121, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 1110, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\werkzeug\routing\map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'main.bulk_update_page'. Did you mean 'main.bulk_update' instead?
+[2025-10-13 23:12:21,965] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:12:21] "[35m[1mGET / HTTP/1.1[0m" 500 -
+[2025-10-13 23:24:44,656] INFO in _internal: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[2025-10-13 23:24:44,656] INFO in _internal: [33mPress CTRL+C to quit[0m
+[2025-10-13 23:24:56,775] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:24:56] "GET / HTTP/1.1" 200 -
+[2025-10-13 23:25:01,789] ERROR in app: Exception on /bulk_update [GET]
+Traceback (most recent call last):
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 920, in full_dispatch_request
+    return self.finalize_request(rv)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 939, in finalize_request
+    response = self.make_response(rv)
+               ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 1212, in make_response
+    raise TypeError(
+TypeError: The view function for 'main.bulk_update' did not return a valid response. The function either returned None or ended without a return statement.
+[2025-10-13 23:25:01,793] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:25:01] "[35m[1mGET /bulk_update HTTP/1.1[0m" 500 -
+[2025-10-13 23:25:05,129] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:25:05] "GET /manage_admins_access HTTP/1.1" 200 -
+[2025-10-13 23:25:18,405] ERROR in app: Exception on /bulk_update [GET]
+Traceback (most recent call last):
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 920, in full_dispatch_request
+    return self.finalize_request(rv)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 939, in finalize_request
+    response = self.make_response(rv)
+               ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 1212, in make_response
+    raise TypeError(
+TypeError: The view function for 'main.bulk_update' did not return a valid response. The function either returned None or ended without a return statement.
+[2025-10-13 23:25:18,406] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:25:18] "[35m[1mGET /bulk_update HTTP/1.1[0m" 500 -
+[2025-10-13 23:32:10,465] INFO in _internal: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[2025-10-13 23:32:10,466] INFO in _internal: [33mPress CTRL+C to quit[0m
+[2025-10-13 23:32:19,154] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:32:19] "[32mGET / HTTP/1.1[0m" 302 -
+[2025-10-13 23:32:19,194] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:32:19] "GET /login HTTP/1.1" 200 -
+[2025-10-13 23:32:19,522] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:32:19] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+[2025-10-13 23:32:39,170] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:32:39] "[32mPOST /login HTTP/1.1[0m" 302 -
+[2025-10-13 23:32:39,273] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:32:39] "GET / HTTP/1.1" 200 -
+[2025-10-13 23:32:43,665] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:32:43] "GET /bulk_update HTTP/1.1" 200 -
+[2025-10-13 23:32:53,942] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:32:53] "GET /bulk_update?email=Rajeev.Gupta@BlackBox.com&caller_id=2185080286 HTTP/1.1" 200 -
+[2025-10-13 23:33:01,747] ERROR in app: Exception on /bulk_update [GET]
+Traceback (most recent call last):
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\routes.py", line 39, in decorated
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\routes.py", line 190, in bulk_update
+    excel_data = parse_excel(file)
+                 ^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\utils.py", line 12, in parse_excel
+    if file.filename.endswith(".csv"):
+       ^^^^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'filename'
+[2025-10-13 23:33:01,754] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:33:01] "[35m[1mGET /bulk_update?file=test+zoom+update.xlsx HTTP/1.1[0m" 500 -
+[2025-10-13 23:51:20,990] INFO in _internal: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[2025-10-13 23:51:20,991] INFO in _internal: [33mPress CTRL+C to quit[0m
+[2025-10-13 23:51:27,425] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:51:27] "GET / HTTP/1.1" 200 -
+[2025-10-13 23:51:31,551] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:51:31] "GET /bulk_update HTTP/1.1" 200 -
+[2025-10-13 23:51:33,579] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:51:33] "GET /manage_admins_access HTTP/1.1" 200 -
+[2025-10-13 23:51:36,081] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:51:36] "GET /bulk_update HTTP/1.1" 200 -
+[2025-10-13 23:51:42,963] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:51:42] "GET /bulk_update?file=test+zoom+update.xlsx HTTP/1.1" 200 -
+[2025-10-13 23:51:52,855] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:51:52] "GET / HTTP/1.1" 200 -
+[2025-10-13 23:52:23,356] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:52:23] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-13 23:52:52,906] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:52:52] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-13 23:52:59,156] ERROR in routes: ajax_add_allowed_user error: 415 Unsupported Media Type: Did not attempt to load JSON data because the request Content-Type was not 'application/json'.
+Traceback (most recent call last):
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\routes.py", line 246, in ajax_add_allowed_user
+    data = request.get_json() or {}
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\werkzeug\wrappers\request.py", line 604, in get_json
+    return self.on_json_loading_failed(None)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\flask\wrappers.py", line 214, in on_json_loading_failed
+    return super().on_json_loading_failed(e)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sdas2\Downloads\Zoom_Phone_Caller_ID_Manager\venv\Lib\site-packages\werkzeug\wrappers\request.py", line 647, in on_json_loading_failed
+    raise UnsupportedMediaType(
+werkzeug.exceptions.UnsupportedMediaType: 415 Unsupported Media Type: Did not attempt to load JSON data because the request Content-Type was not 'application/json'.
+[2025-10-13 23:52:59,161] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:52:59] "[35m[1mPOST /ajax/add_allowed_user HTTP/1.1[0m" 500 -
+[2025-10-13 23:53:05,859] INFO in _internal: 127.0.0.1 - - [13/Oct/2025 23:53:05] "GET /bulk_update HTTP/1.1" 200 -
+[2025-10-13 23:57:49,036] INFO in _internal: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[2025-10-13 23:57:49,037] INFO in _internal: [33mPress CTRL+C to quit[0m
+[2025-10-14 00:01:43,955] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:01:43] "GET / HTTP/1.1" 200 -
+[2025-10-14 00:02:02,263] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:02:02] "POST /ajax/add_allowed_user HTTP/1.1" 200 -
+[2025-10-14 00:02:06,713] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:02:06] "GET /bulk_update HTTP/1.1" 200 -
+[2025-10-14 00:02:08,452] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:02:08] "GET /manage_admins_access HTTP/1.1" 200 -
+[2025-10-14 00:02:17,910] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:02:17] "GET / HTTP/1.1" 200 -
+[2025-10-14 00:02:37,248] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:02:37] "GET /bulk_update HTTP/1.1" 200 -
+[2025-10-14 00:02:47,394] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:02:47] "GET /bulk_update?email=Sanjita.Das@BlackBox.com&caller_id=2185080286 HTTP/1.1" 200 -
+[2025-10-14 00:02:51,211] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:02:51] "GET / HTTP/1.1" 200 -
+[2025-10-14 00:02:55,764] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:02:55] "GET /bulk_update HTTP/1.1" 200 -
+[2025-10-14 00:33:36,843] INFO in _internal: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[2025-10-14 00:33:36,843] INFO in _internal: [33mPress CTRL+C to quit[0m
+[2025-10-14 00:33:42,471] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:33:42] "GET / HTTP/1.1" 200 -
+[2025-10-14 00:33:50,048] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:33:50] "GET /bulk_update HTTP/1.1" 200 -
+[2025-10-14 00:34:00,161] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:34:00] "GET /bulk_update?email=Rajeev.Gupta@BlackBox.com&caller_id=2185080286 HTTP/1.1" 200 -
+[2025-10-14 00:34:06,230] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:34:06] "GET / HTTP/1.1" 200 -
+[2025-10-14 00:34:36,291] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:34:36] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:35:06,286] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:35:06] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:35:36,287] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:35:36] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:36:06,285] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:36:06] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:36:36,281] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:36:36] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:37:06,283] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:37:06] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:37:36,278] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:37:36] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:38:06,283] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:38:06] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:38:36,282] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:38:36] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:39:06,281] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:39:06] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:39:36,269] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:39:36] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:40:06,262] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:40:06] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:40:36,266] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:40:36] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:41:06,279] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:41:06] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:41:36,278] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:41:36] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:42:06,270] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:42:06] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:42:36,264] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:42:36] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:43:06,267] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:43:06] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:43:36,275] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:43:36] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:44:06,276] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:44:06] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:44:36,265] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:44:36] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:45:06,279] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:45:06] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:45:36,274] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:45:36] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:46:06,275] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:46:06] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:46:36,264] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:46:36] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:47:06,267] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:47:06] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:47:36,265] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:47:36] "GET /ajax/refresh_dashboard HTTP/1.1" 200 -
+[2025-10-14 00:47:42,923] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:47:42] "GET /bulk_update HTTP/1.1" 200 -
+[2025-10-14 00:48:01,987] INFO in _internal: 127.0.0.1 - - [14/Oct/2025 00:48:01] "GET /bulk_update?file=test+zoom+update.xlsx HTTP/1.1" 200 -
