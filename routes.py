@@ -45,7 +45,7 @@ def admin_required(f):
         if session.get("role") != "admin":
             flash("❌ Admins only.", "danger")
             # non-admins go to bulk_update page (allowed users)
-            return redirect(url_for("main.bulk_update_page"))
+            return redirect(url_for("main.bulk_update"))
         return f(*args, **kwargs)
     return decorated
 
@@ -161,12 +161,28 @@ def index():
     total_allowed_users = AllowedUser.query.count()
     total_admins = Admin.query.count()
     total_callerid_updates = CallerIDUpdate.query.count()
-    log_activity("VIEW_DASHBOARD", action="Accessed admin dashboard")
-    return render_template("index.html",
-                           total_allowed_users=total_allowed_users,
-                           total_admins=total_admins,
-                           total_callerid_updates=total_callerid_updates)
 
+    # fetch latest 20 updates for dashboard
+    updates = CallerIDUpdate.query.order_by(CallerIDUpdate.updated_ts.desc()).limit(20).all()
+    dashboard_updates = []
+    for u in updates:
+        # determine if bulk/single
+        bulk_log = BulkUpdateLog.query.filter_by(email=u.user_id, timestamp=u.updated_ts).first()
+        update_type = "B" if bulk_log else "S"
+        dashboard_updates.append({
+            "time": u.updated_ts.strftime("%Y-%m-%d %H:%M:%S"),
+            "user": u.updated_by,
+            "update_type": update_type
+        })
+
+    log_activity("VIEW_DASHBOARD", action="Accessed admin dashboard")
+    return render_template(
+        "index.html",
+        total_allowed_users=total_allowed_users,
+        total_admins=total_admins,
+        total_callerid_updates=total_callerid_updates,
+        dashboard_updates=dashboard_updates
+    )
 
 @main_bp.route("/activity_logs")
 @login_required
@@ -212,37 +228,61 @@ def bulk_update():
                         action=f"Failed to update {email}: {str(e)}"
                     )
     # Always fetch latest updates for table display
-    updates = CallerIDUpdate.query.order_by(CallerIDUpdate.updated_ts.desc()).all()
-    
-     # Transform DB rows for template
+   # Fetch latest 1000 updates from DB
+    updates = CallerIDUpdate.query.order_by(CallerIDUpdate.updated_ts.desc()).limit(1000).all()
     uploaded_data = [
-        {
-            "email": u.email,
-            "outbound_caller_id": u.caller_id,
-            "status": u.status,
-            "reason": u.reason,
-            "updated_by": u.updated_by,
-            "updated_ts": u.updated_ts.strftime("%Y-%m-%d %H:%M:%S") if u.updated_ts else "-"
-        }
-        for u in updates
-    ]
-    
-    return render_template(
-        "bulk_update.html",
-        uploaded_data=excel_data,
-        success=success_updates,
-        failed=failed_updates
-    )
+     {
+        "email": u.user_id,
+        "outbound_caller_id": u.caller_id_number,
+        "status": u.status,
+        "reason": u.reason,
+        "updated_by": u.updated_by,
+        "updated_ts": u.updated_ts.strftime("%Y-%m-%d %H:%M:%S") if u.updated_ts else "-"
+     } for u in updates
+   ]
 
+    return render_template(
+    "bulk_update.html",
+    uploaded_data=uploaded_data,   # latest DB updates
+    success=success_updates,
+    failed=failed_updates
+)
 @main_bp.route("/ajax/refresh_dashboard")
 @login_required
 @admin_required
 def ajax_refresh_dashboard():
-    data = {
+    updates = CallerIDUpdate.query.order_by(CallerIDUpdate.updated_ts.desc()).limit(20).all()
+    dashboard_updates = []
+
+    for u in updates:
+        # Check if this update exists in BulkUpdateLog
+        bulk_log = BulkUpdateLog.query.filter(
+            func.lower(BulkUpdateLog.email) == u.user_id.lower(),
+            BulkUpdateLog.timestamp == u.updated_ts
+        ).first()
+        update_type = "Bulk" if bulk_log else "Single"
+
+        dashboard_updates.append({
+            "time": u.updated_ts.strftime("%Y-%m-%d %H:%M:%S") if u.updated_ts else "-",
+            "user": u.updated_by,
+            "update_type": update_type
+        })
+
+    recent_updates_html = render_template("partials/recent_updates_rows.html",
+                                          dashboard_updates=dashboard_updates)
+
+    allowed_users_html = render_template("partials/allowed_users_table.html",
+                                         allowed_users=AllowedUser.query.all())
+
+    return jsonify({
+        "status": "success",
+        "recent_updates_html": recent_updates_html,
+        "allowed_users_html": allowed_users_html,
+        "total_admins": Admin.query.count(),
         "total_allowed_users": AllowedUser.query.count(),
-        "total_admins": Admin.query.count()
-    }
-    return jsonify(data)
+        "total_callerid_updates": CallerIDUpdate.query.count()
+    })
+
 
 # ---------------- Generic AJAX table endpoint ----------------
 @main_bp.route("/ajax/<table_type>")
@@ -422,6 +462,23 @@ def ajax_update_callerid():
     except Exception as e:
         logger.exception("ajax_update_callerid error: %s", e)
         return jsonify({"status": "error", "message": str(e)}), 500
+    
+@main_bp.route("/ajax_refresh_callerid")
+@login_required
+def ajax_refresh_callerid():
+    updates = CallerIDUpdate.query.order_by(CallerIDUpdate.updated_ts.desc()).limit(1000).all()
+    uploaded_data = [
+        {
+            "email": u.user_id,
+            "outbound_caller_id": u.caller_id_number,
+            "status": u.status,
+            "reason": u.reason,
+            "updated_by": u.updated_by,
+            "updated_ts": u.updated_ts.strftime("%Y-%m-%d %H:%M:%S") if u.updated_ts else "-"
+        } for u in updates
+    ]
+    html = render_template("partials/callerid_updates_table.html", uploaded_data=uploaded_data)
+    return jsonify({"status": "success", "html": html})
 
 # ---------------- Inline Single-User Update via ⚙ ----------------
 @main_bp.route("/ajax/update_callerid_inline", methods=["POST"])
@@ -455,8 +512,8 @@ def ajax_update_callerid_inline():
             "status": "success",
             "updates": [
                 {
-                    "email": u.user_email,
-                    "caller_id": u.caller_id,
+                    "email": u.user_id,
+                    "caller_id": u.caller_id_number,
                     "updated_by": u.updated_by,
                     "timestamp": u.updated_ts.strftime("%Y-%m-%d %H:%M:%S")
                 } for u in updates

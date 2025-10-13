@@ -42,11 +42,31 @@
     </div>
   </div>
 
-  <!-- Caller ID Updates Section -->
+  <!-- Recent Caller ID Updates Section -->
   <div class="mb-5">
-    <h5 class="mb-3">Caller ID Updates</h5>
-    <div id="callerid-updates-table">
-      {% include "partials/callerid_updates_table.html" %}
+    <h5 class="mb-3">Recent Caller ID Updates</h5>
+    <div id="recent-callerid-updates">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>By User</th>
+            <th>Bulk/Single</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in dashboard_updates %}
+          <tr>
+            <td>{{ u.time }}</td>
+            <td>{{ u.user }}</td>
+            <td>{{ u.update_type }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if dashboard_updates|length == 0 %}
+        <p class="text-muted">No caller ID updates yet.</p>
+      {% endif %}
     </div>
   </div>
 
@@ -63,14 +83,14 @@
         const allowedTableBody = document.querySelector("#allowed-users-table");
         if(allowedTableBody) allowedTableBody.innerHTML = data.allowed_users_html;
 
-        // Update Caller ID Updates Table
-        const calleridTableBody = document.querySelector("#callerid-updates-table");
-        if(calleridTableBody) calleridTableBody.innerHTML = data.callerid_updates_html;
-
         // Update Counts
         document.getElementById("total-admins").innerText = data.total_admins;
         document.getElementById("total-allowed-users").innerText = data.total_allowed_users;
         document.getElementById("total-callerid-updates").innerText = data.total_callerid_updates;
+
+        // Update Recent Caller ID Updates Table
+        const recentTableBody = document.querySelector("#recent-callerid-updates tbody");
+        if(recentTableBody) recentTableBody.innerHTML = data.recent_updates_html;
       }
     } catch(err){
       console.error("Failed to refresh dashboard", err);
@@ -82,7 +102,7 @@
 </script>
 
 <style>
-  /* Optional: Custom Dark Theme if using base.html theme toggle */
+  /* Optional: Custom Dark Theme */
   .dark-theme {
     background-color: #121212;
     color: #e0e0e0;
@@ -100,6 +120,8 @@
   }
 </style>
 {% endblock %}
+
+
 
 
 

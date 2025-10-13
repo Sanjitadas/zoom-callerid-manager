@@ -1,0 +1,12 @@
+{% for u in dashboard_updates %}
+<tr>
+    <td>{{ u.time }}</td>
+    <td>{{ u.user }}</td>
+    <td>{{ u.update_type }}</td>
+</tr>
+{% else %}
+<tr>
+    <td colspan="3" class="text-muted">No caller ID updates yet.</td>
+</tr>
+{% endfor %}
+
