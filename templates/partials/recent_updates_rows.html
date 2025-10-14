@@ -1,12 +1,33 @@
-{% for u in dashboard_updates %}
+{% for u in recent_updates %}
 <tr>
-    <td>{{ u.time }}</td>
-    <td>{{ u.user }}</td>
-    <td>{{ u.update_type }}</td>
-</tr>
-{% else %}
-<tr>
-    <td colspan="3" class="text-muted">No caller ID updates yet.</td>
+    <td>{{ u.updated_ts.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+    <td>{{ u.updated_by }}</td>
+    <td>
+        {% if u.is_single and u.is_bulk %}
+            Both
+        {% elif u.is_single %}
+            S
+        {% elif u.is_bulk %}
+            B
+        {% else %}
+            -
+        {% endif %}
+    </td>
+    <td>{{ u.caller_id_number }}</td>
 </tr>
 {% endfor %}
+
+{% if recent_updates|length == 0 %}
+<tr>
+    <td colspan="4" class="text-center text-muted">No caller ID updates yet.</td>
+</tr>
+{% endif %}
+
+
+
+
+
+
+
+
 

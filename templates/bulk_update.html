@@ -41,8 +41,38 @@
     </div>
 
     <!-- Updates Table -->
-    <div id="bulk-table-container">
-        {% include 'partials/bulk_table.html' %}
+    <div id="callerid-table-container">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="select-all"></th>
+                    <th>Email</th>
+                    <th>Outbound Caller ID</th>
+                    <th>Status</th>
+                    <th>Reason</th>
+                    <th>Updated By</th>
+                    <th>Updated Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in uploaded_data %}
+                <tr data-email="{{ u.email }}">
+                    <td><input type="checkbox" class="row-checkbox" data-email="{{ u.email }}"></td>
+                    <td>{{ u.email }}</td>
+                    <td class="caller-id-display">{{ u.outbound_caller_id }}</td>
+                    <td>{% if u.status %}<span class="badge bg-success">Success</span>{% else %}<span class="badge bg-danger">Failed</span>{% endif %}</td>
+                    <td>{{ u.reason }}</td>
+                    <td class="updated-by">{{ u.updated_by }}</td>
+                    <td class="updated-ts">{{ u.updated_ts }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Dashboard Count Example -->
+    <div class="mt-3">
+        <h5>Total Caller ID Updates: <span id="total-callerid-updates">{{ total_callerid_updates }}</span></h5>
     </div>
 </div>
 {% endblock %}
@@ -67,8 +97,7 @@ $(document).ready(function() {
                     const row = $(`tr[data-email='${email}']`);
                     if(row.length){
                         row.find(".caller-id-display").text(caller_id);
-                        row.find(".inline-cid").val(caller_id);
-                        row.find("td:nth-child(5)").html('<span class="badge bg-success">Success</span>');
+                        row.find("td:nth-child(4)").html('<span class="badge bg-success">Success</span>');
                         row.find(".updated-by").text(resp.updated_by);
                         row.find(".updated-ts").text(resp.updated_ts);
                     } else location.reload();
@@ -90,7 +119,7 @@ $(document).ready(function() {
             contentType: false,
             success: function(resp) {
                 if(resp.status==="success"){
-                    $("#bulk-table-container").html(resp.updated_table_html);
+                    $("#callerid-table-container").html(resp.updated_table_html);
                     $("#bulk-status").text("✅ File uploaded successfully.");
                     $("#apply-bulk-btn").prop("disabled", false);
                     $("#download-bulk-btn").prop("disabled", true);
@@ -117,12 +146,10 @@ $(document).ready(function() {
                 if(resp.status==="success"){
                     resp.results.forEach(r => {
                         let row = $(`tr[data-email='${r.email}']`);
-                        let statusCell = row.find("td:nth-child(5)");
-                        statusCell.html(r.success
+                        row.find(".caller-id-display").text(r.caller_id);
+                        row.find("td:nth-child(4)").html(r.success
                             ? `<span class="badge bg-success">Success</span>`
                             : `<span class="badge bg-danger" title="${r.reason || 'Failed'}">Failed</span>`);
-                        row.find(".caller-id-display").text(r.caller_id);
-                        row.find(".inline-cid").val(r.caller_id);
                         row.find(".updated-by").text(r.updated_by);
                         row.find(".updated-ts").text(r.updated_ts);
                     });
@@ -163,7 +190,7 @@ $(document).ready(function() {
     });
 
     // ---------- Inline Row Update ----------
-    $("#bulk-table-container").on("click",".btn-update-row",function(){
+    $("#callerid-table-container").on("click",".btn-update-row",function(){
         let row = $(this).closest("tr");
         let email = row.data("email");
         let cid = row.find(".inline-cid").val().trim();
@@ -177,7 +204,7 @@ $(document).ready(function() {
             success: function(resp){
                 if(resp.status==="success"){
                     row.find(".caller-id-display").text(cid);
-                    row.find("td:nth-child(5)").html('<span class="badge bg-success">Success</span>');
+                    row.find("td:nth-child(4)").html('<span class="badge bg-success">Success</span>');
                     row.find(".updated-by").text(resp.updated_by);
                     row.find(".updated-ts").text(resp.updated_ts);
                 } else alert(resp.message || "Failed");
@@ -187,12 +214,43 @@ $(document).ready(function() {
     });
 
     // ---------- Select/Deselect All ----------
-    $("#bulk-table-container").on("click","#select-all",function(){
+    $("#callerid-table-container").on("click","#select-all",function(){
         $(".row-checkbox").prop("checked", this.checked);
     });
 });
+
+// ---------- Auto-refresh Caller ID Table ----------
+async function refreshCallerIDTable() {
+  try {
+    const res = await fetch("{{ url_for('main.ajax_refresh_dashboard') }}");
+    const data = await res.json();
+    if (data.status === "success") {
+      // Update tbody
+      document.querySelector("#callerid-table-container tbody").innerHTML = data.recent_updates_html;
+      // Update total count card
+      const totalElem = document.querySelector("#total-callerid-updates");
+      if(totalElem) totalElem.textContent = data.total_callerid_updates;
+    }
+  } catch(err) {
+    console.error("Failed to refresh Caller ID table", err);
+  }
+}
+
+// Refresh every 15 seconds
+setInterval(refreshCallerIDTable, 15000);
+
+// Refresh immediately on page load if flash-success exists
+document.addEventListener("DOMContentLoaded", () => {
+  const flashSuccess = document.querySelector(".alert-success");
+  if (flashSuccess) refreshCallerIDTable();
+});
+
 </script>
 {% endblock %}
+
+
+
+
 
 
 

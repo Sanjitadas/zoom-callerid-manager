@@ -23,6 +23,16 @@
         <h5>Allowed Users</h5>
         <h2 id="total-allowed-users">{{ total_allowed_users }}</h2>
         <i class="bi bi-people-fill fs-3 text-success"></i>
+        <div class="d-flex justify-content-around mt-3">
+          <div>
+            <span id="total-allowed-users-online" class="badge bg-success">{{ online_count }}</span>
+            <p class="mb-0">Online</p>
+          </div>
+          <div>
+            <span id="total-allowed-users-offline" class="badge bg-danger">{{ offline_count }}</span>
+            <p class="mb-0">Offline</p>
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-md-4 mb-3">
@@ -38,7 +48,7 @@
   <div class="mb-5">
     <h5 class="mb-3">Allowed Users</h5>
     <div id="allowed-users-table">
-      {% include "partials/allowed_users_table.html" %}
+      {% include "partials/allowed_users_list.html" %}
     </div>
   </div>
 
@@ -51,7 +61,8 @@
           <tr>
             <th>Time</th>
             <th>By User</th>
-            <th>Bulk/Single</th>
+            <th>Type</th>
+            <th>Caller ID</th>
           </tr>
         </thead>
         <tbody>
@@ -60,66 +71,104 @@
             <td>{{ u.time }}</td>
             <td>{{ u.user }}</td>
             <td>{{ u.update_type }}</td>
+            <td>{{ u.caller_id_number }}</td>
           </tr>
           {% endfor %}
+          {% if dashboard_updates|length == 0 %}
+          <tr>
+            <td colspan="4" class="text-muted text-center">No caller ID updates yet.</td>
+          </tr>
+          {% endif %}
         </tbody>
       </table>
-      {% if dashboard_updates|length == 0 %}
-        <p class="text-muted">No caller ID updates yet.</p>
-      {% endif %}
     </div>
   </div>
 
 </div>
 
+<!-- AJAX Refresh Scripts -->
 <script>
-  // ---------- Auto-refresh Dashboard ----------
-  async function refreshLiveTables(){
-    try {
-      const res = await fetch("{{ url_for('main.ajax_refresh_dashboard') }}");
-      const data = await res.json();
-      if(data.status === "success"){
-        // Update Allowed Users Table
-        const allowedTableBody = document.querySelector("#allowed-users-table");
-        if(allowedTableBody) allowedTableBody.innerHTML = data.allowed_users_html;
-
-        // Update Counts
-        document.getElementById("total-admins").innerText = data.total_admins;
-        document.getElementById("total-allowed-users").innerText = data.total_allowed_users;
-        document.getElementById("total-callerid-updates").innerText = data.total_callerid_updates;
-
-        // Update Recent Caller ID Updates Table
-        const recentTableBody = document.querySelector("#recent-callerid-updates tbody");
-        if(recentTableBody) recentTableBody.innerHTML = data.recent_updates_html;
+async function refreshCallerIDTable() {
+  try {
+    const res = await fetch("{{ url_for('main.ajax_refresh_dashboard') }}");
+    const data = await res.json();
+    if (data.status === "success") {
+      const tbody = document.querySelector("#recent-callerid-updates tbody");
+      if(tbody) {
+        tbody.innerHTML = data.recent_updates_html.trim() !== "" 
+          ? data.recent_updates_html 
+          : `<tr><td colspan="4" class="text-muted text-center">No caller ID updates yet.</td></tr>`;
       }
-    } catch(err){
-      console.error("Failed to refresh dashboard", err);
-    }
-  }
 
-  // Auto-refresh every 30 seconds
-  setInterval(refreshLiveTables, 30000);
+      const totalElem = document.querySelector("#total-callerid-updates");
+      if(totalElem) totalElem.textContent = data.total_callerid_updates;
+    }
+  } catch(err) {
+    console.error("Failed to refresh Caller ID table", err);
+  }
+}
+
+async function refreshAllowedUsers() {
+  try {
+    const res = await fetch("{{ url_for('main.ajax_refresh_allowed_users') }}");
+    const data = await res.json();
+    if (data.status === "success") {
+      const container = document.querySelector("#allowed-users-table");
+      if (container) container.innerHTML = data.allowed_users_html;
+
+      const onlineBadge = document.querySelector("#total-allowed-users-online");
+      const offlineBadge = document.querySelector("#total-allowed-users-offline");
+      if(onlineBadge) onlineBadge.textContent = data.online_count;
+      if(offlineBadge) offlineBadge.textContent = data.offline_count;
+    }
+  } catch(err) {
+    console.error("Failed to refresh Allowed Users", err);
+  }
+}
+
+// Refresh every 15 seconds
+setInterval(refreshCallerIDTable, 15000);
+setInterval(refreshAllowedUsers, 15000);
+
+document.addEventListener("DOMContentLoaded", () => {
+  refreshCallerIDTable();
+  refreshAllowedUsers();
+});
 </script>
 
+<!-- Custom Styles -->
 <style>
-  /* Optional: Custom Dark Theme */
-  .dark-theme {
+.badge {
+    font-size: 1rem;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-block;
+    line-height: 20px;
+}
+
+/* Optional: Dark Theme */
+.dark-theme {
     background-color: #121212;
     color: #e0e0e0;
-  }
-  .dark-theme .card {
+}
+.dark-theme .card {
     background-color: #1e1e1e;
     color: #e0e0e0;
-  }
-  .dark-theme table.table {
+}
+.dark-theme table.table {
     color: #e0e0e0;
-  }
-  .dark-theme thead.table-light {
+}
+.dark-theme thead.table-light {
     background-color: #2c2c2c !important;
     color: #e0e0e0 !important;
-  }
+}
 </style>
 {% endblock %}
+
+
+
+
 
 
 

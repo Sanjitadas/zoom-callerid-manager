@@ -5,7 +5,10 @@ from datetime import datetime
 from extensions import db, bcrypt, mail, login_manager
 from models import Admin, AllowedUser
 import logging.config
-from settings import LOGGING  # import centralized logging config
+from settings import LOGGING  # centralized logging config
+
+from auth import auth_bp
+from routes import main_bp
 
 def create_app():
     app = Flask(__name__)
@@ -36,13 +39,11 @@ def create_app():
         return user
 
     # Register blueprints
-    from auth import auth_bp
     app.register_blueprint(auth_bp)
-
-    from routes import main_bp
-    app.register_blueprint(main_bp)
+    app.register_blueprint(main_bp)  # no prefix, '/' will now work
 
     return app
+
 
 
 

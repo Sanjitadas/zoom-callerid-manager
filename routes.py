@@ -68,6 +68,12 @@ def _interpret_zoom_result(res):
         return success, reason, extension, line_key_id, raw
     except Exception:
         return False, "invalid_zoom_response_structure", None, None, res
+    
+def get_allowed_users_status():
+    allowed_users = AllowedUser.query.order_by(AllowedUser.email.asc()).all()
+    online = [u.email for u in allowed_users if u.is_online]   # assuming AllowedUser has is_online column
+    offline = [u.email for u in allowed_users if not u.is_online]
+    return allowed_users, online, offline
 
 # ---------------- Local log_activity (flexible signature) ----------------
 def safe_update_line_key(email, caller_id, max_retries=5, base_delay=1.0):
@@ -174,14 +180,17 @@ def index():
             "user": u.updated_by,
             "update_type": update_type
         })
-
+    allowed_users, online, offline = get_allowed_users_status()
     log_activity("VIEW_DASHBOARD", action="Accessed admin dashboard")
     return render_template(
         "index.html",
         total_allowed_users=total_allowed_users,
         total_admins=total_admins,
         total_callerid_updates=total_callerid_updates,
-        dashboard_updates=dashboard_updates
+        dashboard_updates=dashboard_updates,
+        allowed_users=allowed_users,
+        online_count=len(online),
+        offline_count=len(offline)
     )
 
 @main_bp.route("/activity_logs")
@@ -247,43 +256,81 @@ def bulk_update():
     success=success_updates,
     failed=failed_updates
 )
-@main_bp.route("/ajax/refresh_dashboard")
+@main_bp.route("/ajax/refresh_dashboard", methods=["GET"])
 @login_required
 @admin_required
 def ajax_refresh_dashboard():
-    updates = CallerIDUpdate.query.order_by(CallerIDUpdate.updated_ts.desc()).limit(20).all()
-    dashboard_updates = []
+    # Fetch last 10 single updates
+    single_updates = CallerIDUpdate.query.order_by(CallerIDUpdate.updated_ts.desc()).limit(10).all()
 
-    for u in updates:
-        # Check if this update exists in BulkUpdateLog
-        bulk_log = BulkUpdateLog.query.filter(
-            func.lower(BulkUpdateLog.email) == u.user_id.lower(),
-            BulkUpdateLog.timestamp == u.updated_ts
-        ).first()
-        update_type = "Bulk" if bulk_log else "Single"
+    # Fetch last 10 bulk updates
+    bulk_updates = BulkUpdateLog.query.order_by(BulkUpdateLog.timestamp.desc()).limit(10).all()
 
-        dashboard_updates.append({
-            "time": u.updated_ts.strftime("%Y-%m-%d %H:%M:%S") if u.updated_ts else "-",
-            "user": u.updated_by,
-            "update_type": update_type
+    # Combine and mark type
+    recent_updates = []
+
+    # Single updates
+    for u in single_updates:
+        recent_updates.append({
+            "updated_ts": u.updated_ts,
+            "updated_by": u.updated_by,
+            "caller_id_number": u.caller_id_number,
+            "is_single": True,
+            "is_bulk": False
         })
 
-    recent_updates_html = render_template("partials/recent_updates_rows.html",
-                                          dashboard_updates=dashboard_updates)
+    # Bulk updates
+    for b in bulk_updates:
+        # Check if user already has a single update at same timestamp
+        is_both = any(s["updated_by"]==b.email and s["updated_ts"]==b.timestamp for s in recent_updates)
+        recent_updates.append({
+            "updated_ts": b.timestamp,
+            "updated_by": b.email,
+            "caller_id_number": b.new_caller_id,
+            "is_single": not is_both,
+            "is_bulk": True
+        })
 
-    allowed_users_html = render_template("partials/allowed_users_table.html",
-                                         allowed_users=AllowedUser.query.all())
+    # Sort combined list by time descending
+    recent_updates.sort(key=lambda x: x["updated_ts"], reverse=True)
+
+    # Limit to 10
+    recent_updates = recent_updates[:10]
+
+    # Total updates count
+    total_callerid_updates = CallerIDUpdate.query.count() + BulkUpdateLog.query.count()
+
+    # Render partial table rows
+    recent_updates_html = render_template("partials/recent_updates_rows.html", recent_updates=recent_updates)
 
     return jsonify({
         "status": "success",
         "recent_updates_html": recent_updates_html,
-        "allowed_users_html": allowed_users_html,
-        "total_admins": Admin.query.count(),
-        "total_allowed_users": AllowedUser.query.count(),
-        "total_callerid_updates": CallerIDUpdate.query.count()
+        "total_callerid_updates": total_callerid_updates
     })
+@main_bp.route('/ajax_refresh_allowed_users')
+def ajax_refresh_allowed_users():
+    # Fetch allowed users from DB
+    allowed_users = AllowedUser.query.all()
 
+    # Compute online/offline counts
+    online_count = sum(1 for u in allowed_users if u.is_online)
+    offline_count = len(allowed_users) - online_count
 
+    # Render partial HTML for the allowed users list
+    allowed_users_html = render_template(
+        'partials/allowed_users_list.html', 
+        allowed_users=allowed_users,
+        online_count=online_count,
+        offline_count=offline_count
+    )
+
+    return jsonify({
+        "status": "success",
+        "allowed_users_html": allowed_users_html,
+        "online_count": online_count,
+        "offline_count": offline_count
+    })
 # ---------------- Generic AJAX table endpoint ----------------
 @main_bp.route("/ajax/<table_type>")
 @login_required

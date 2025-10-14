@@ -24,7 +24,8 @@ class AllowedUser(UserMixin, db.Model):
     password = db.Column(db.String(255), nullable=False)   # PLAIN TEXT
     default_password = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
+    is_online = db.Column(db.Boolean, default=False)
+    
 # ------------------------
 # Caller ID Single Update Log
 # ------------------------
