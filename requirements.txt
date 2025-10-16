@@ -1,4 +1,4 @@
-Flask==2.3.3
+Flask==2.3.4de
 Flask-SQLAlchemy==3.0.4
 requests==2.32.0
 python-dotenv==1.0.0

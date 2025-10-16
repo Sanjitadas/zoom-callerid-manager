@@ -10,6 +10,7 @@ from logging.handlers import RotatingFileHandler
 LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
 os.makedirs(LOG_DIR, exist_ok=True)
 
+DEBUG=True
 # Define the log file path
 LOG_FILE = os.path.join(LOG_DIR, 'app.log')
 

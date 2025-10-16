@@ -22,6 +22,7 @@ from utils import log_activity, parse_excel, get_allowed_users_status
 import traceback
 import requests
 from werkzeug.utils import secure_filename
+import pdb
 # =========================================================================
 # === FIXES: MISSING DEFINITIONS AND PLACEHOLDERS FOR EXTERNAL DEPENDENCIES ===
 # =========================================================================
@@ -75,6 +76,7 @@ def update_zoom_user(email, new_callerid):
 
 # Example bulk update route snippet with stale session check
 def apply_bulk_update():
+    pdb.set_trace()
     """
     Apply bulk update from session data
     """
