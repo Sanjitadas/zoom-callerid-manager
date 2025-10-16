@@ -66,18 +66,25 @@
 <script>
 document.addEventListener('DOMContentLoaded', function(){
 
+    alert("hello sanjita");
     // Bulk elements
     const uploadBtn = document.getElementById('upload-bulk-btn');
     const fileInput = document.getElementById('bulk-file');
     const applyBtn = document.getElementById('apply-bulk-btn');
     const downloadBtn = document.getElementById('download-bulk-btn');
     const tableContainer = document.getElementById('callerid-table-container');
-
-    // Check session data on load (initial state)
-    {% if session.get('bulk_data') %}
+    // const hasBulkData = { 'true' if session.get('bulk_data') else 'false' };
+    // // Check session data on load (initial state)
+    // {% if session.get('bulk_data') %}
+    //     applyBtn.disabled = false;
+    //     downloadBtn.disabled = false;
+    // {% endif %}
+    const hasBulkData =    session.get('SESSION_BULK_KEY');
+    print("session cache : "+hasBulkData);
+    if (hasBulkData) {
         applyBtn.disabled = false;
         downloadBtn.disabled = false;
-    {% endif %}
+    }
 
     // ---- Single Update ----
     const singleForm = document.getElementById('single-update-form');

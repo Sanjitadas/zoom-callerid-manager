@@ -455,9 +455,12 @@ def ajax_update_callerid():
         "updated_by": rec.updated_by,
         "updated_ts": rec.updated_ts.isoformat()
     })
-
+@main_bp.route('/bulk_update', methods=['GET'])
+def bulk_update_get():
+    print("Get method called : ")
+    return render_template('bulk_update.html')
 # ---------------- Bulk Update ----------------
-@main_bp.route('/bulk_update', methods=['GET', 'POST'])
+@main_bp.route('/bulk_update', methods=['POST'])
 def bulk_update():
     if request.method == 'POST':
         file = request.files.get('excel_file')
