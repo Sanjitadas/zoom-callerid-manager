@@ -1,27 +1,18 @@
-{% for u in recent_updates %}
+{% for update in recent_updates %}
 <tr>
-    <td>{{ u.updated_ts.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-    <td>{{ u.updated_by }}</td>
+    <td>{{ update.email }}</td>
+    <td>{{ update.caller_id }}</td>
+    <td>{{ update.updated_by }}</td>
+    <td>{{ update.updated_ts.strftime('%Y-%m-%d %H:%M') if update.updated_ts else '-' }}</td>
     <td>
-        {% if u.is_single and u.is_bulk %}
-            Both
-        {% elif u.is_single %}
-            S
-        {% elif u.is_bulk %}
-            B
-        {% else %}
-            -
-        {% endif %}
+        {% if update.success %}<span class="badge bg-success">Success</span>
+        {% else %}<span class="badge bg-danger">Failed</span>{% endif %}
     </td>
-    <td>{{ u.caller_id_number }}</td>
 </tr>
+{% else %}
+<tr><td colspan="5" class="text-center text-muted">No recent updates.</td></tr>
 {% endfor %}
 
-{% if recent_updates|length == 0 %}
-<tr>
-    <td colspan="4" class="text-center text-muted">No caller ID updates yet.</td>
-</tr>
-{% endif %}
 
 
 

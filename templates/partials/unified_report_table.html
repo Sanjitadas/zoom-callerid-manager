@@ -1,0 +1,58 @@
+<div class="table-responsive">
+    <table class="table table-hover table-bordered align-middle">
+        <thead class="table-primary">
+            <tr>
+                <th scope="col">Update Type</th>
+                <th scope="col">Email</th>
+                <th scope="col">Caller ID</th>
+                <th scope="col">Status</th>
+                <th scope="col">Reason</th>
+                <th scope="col">Updated By</th>
+                <th scope="col">Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in report_list %}
+            <tr>
+                <td>
+                    {% if row.update_type == "Single" %}
+                        <span class="badge bg-info text-dark">Single</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Bulk</span>
+                    {% endif %}
+                </td>
+                <td>{{ row.email }}</td>
+                <td>{{ row.caller_id }}</td>
+                <td>
+                    {% if row.success %}
+                        {% if 'success' in row.success|lower %}
+                            <span class="badge bg-success">{{ row.success }}</span>
+                        {% elif 'failed' in row.success|lower %}
+                            <span class="badge bg-danger">{{ row.success }}</span>
+                        {% else %}
+                            <span class="badge bg-warning">{{ row.success }}</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge bg-secondary">Pending</span>
+                    {% endif %}
+                </td>
+                <td>{{ row.reason or '-' }}</td>
+                <td>{{ row.updated_by or '-' }}</td>
+                <td>{{ row.updated_ts }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" class="text-center text-muted">No updates available.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+
+
+

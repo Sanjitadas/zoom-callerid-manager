@@ -26,29 +26,32 @@ class AllowedUser(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_online = db.Column(db.Boolean, default=False)
     
-# ------------------------
-# Caller ID Single Update Log
-# ------------------------
+# CallerIDUpdate (Single)
 class CallerIDUpdate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(150), nullable=False)
     user_id = db.Column(db.String(50))
     extension = db.Column(db.String(50))
     caller_id_name = db.Column(db.String(100))
     caller_id_number = db.Column(db.String(50))
-    status = db.Column(db.String(20))
+    status = db.Column(db.String(20), nullable=False) 
+    reason = db.Column(db.String(255))                # New column for failure reason
     updated_by = db.Column(db.String(150))
+    update_type = db.Column(db.String(1), default='S') # 'S' for Single
     updated_ts = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ------------------------
-# Bulk Update Log
-# ------------------------
+# BulkUpdateLog
 class BulkUpdateLog(db.Model):
     __tablename__ = "bulk_update_log"
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), nullable=False)
     old_caller_id = db.Column(db.String(20))
     new_caller_id = db.Column(db.String(20))
+    reason = db.Column(db.String(255))                # Optional
+    updated_by = db.Column(db.String(150))
+    update_type = db.Column(db.String(1), default='B') # 'B' for Bulk
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(50))
 
 # ------------------------
 # GLOBAL ACTIVITY LOG (LOGIN / LOGOUT / ADMIN ACTIONS)

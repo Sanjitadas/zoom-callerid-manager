@@ -27,23 +27,24 @@ def get_access_token():
     global ACCESS_TOKEN, EXPIRY
     now = time.time()
 
-    # Refresh if token missing or expired
     if not ACCESS_TOKEN or now >= EXPIRY:
-        response = requests.post(
-            TOKEN_URL,
-            params={"grant_type": "account_credentials", "account_id": ACCOUNT_ID},
-            auth=HTTPBasicAuth(CLIENT_ID, CLIENT_SECRET),
-        )
-        response.raise_for_status()
-        data = response.json()
-
-        ACCESS_TOKEN = data["access_token"]
-        # Refresh 1 minute before expiry
-        EXPIRY = now + data["expires_in"] - 60  
-
-        print("🔑 Zoom access token refreshed successfully")
+        try:
+            response = requests.post(
+                TOKEN_URL,
+                params={"grant_type": "account_credentials", "account_id": ACCOUNT_ID},
+                auth=HTTPBasicAuth(CLIENT_ID, CLIENT_SECRET),
+            )
+            response.raise_for_status()
+            data = response.json()
+            ACCESS_TOKEN = data["access_token"]
+            EXPIRY = now + data.get("expires_in", 3600) - 60  # fallback 1 hour
+            print("🔑 Zoom access token refreshed successfully")
+        except Exception as e:
+            print(f"❌ Failed to get Zoom token: {e}")
+            raise e
 
     return ACCESS_TOKEN
+
 
 def get_headers():
     """

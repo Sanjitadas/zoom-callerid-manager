@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: 0491c2380f73
+Revision ID: da7f252802f5
 Revises: 
-Create Date: 2025-10-13 07:27:06.554798
+Create Date: 2025-10-15 20:24:21.092049
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '0491c2380f73'
+revision = 'da7f252802f5'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -42,6 +42,7 @@ def upgrade():
     sa.Column('password', sa.String(length=255), nullable=False),
     sa.Column('default_password', sa.String(length=50), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('is_online', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
     )
@@ -50,17 +51,23 @@ def upgrade():
     sa.Column('email', sa.String(length=120), nullable=False),
     sa.Column('old_caller_id', sa.String(length=20), nullable=True),
     sa.Column('new_caller_id', sa.String(length=20), nullable=True),
+    sa.Column('reason', sa.String(length=255), nullable=True),
+    sa.Column('updated_by', sa.String(length=150), nullable=True),
+    sa.Column('update_type', sa.String(length=1), nullable=True),
     sa.Column('timestamp', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('caller_id_update',
     sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('email', sa.String(length=150), nullable=False),
     sa.Column('user_id', sa.String(length=50), nullable=True),
     sa.Column('extension', sa.String(length=50), nullable=True),
     sa.Column('caller_id_name', sa.String(length=100), nullable=True),
     sa.Column('caller_id_number', sa.String(length=50), nullable=True),
-    sa.Column('status', sa.String(length=20), nullable=True),
+    sa.Column('status', sa.String(length=20), nullable=False),
+    sa.Column('reason', sa.String(length=255), nullable=True),
     sa.Column('updated_by', sa.String(length=150), nullable=True),
+    sa.Column('update_type', sa.String(length=1), nullable=True),
     sa.Column('updated_ts', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )

@@ -10,66 +10,40 @@ auth_bp = Blueprint("auth", __name__, template_folder="templates")
 # ---------------------------------------------
 # LOGIN
 # ---------------------------------------------
-@auth_bp.route("/login", methods=["GET", "POST"])
+@auth_bp.route('/login', methods=['GET','POST'])
 def login():
-    if request.method == "POST":
-        email_input = request.form.get("email", "").strip().lower()
-        password_input = request.form.get("password", "").strip()
+    if request.method == 'POST':
+        email_input = (request.form.get('email') or '').strip().lower()
+        password_input = (request.form.get('password') or '').strip()
 
-        # -------------------
-        # Check Admin
-        # -------------------
+        # try admin
         admin = Admin.query.filter(func.lower(Admin.email) == email_input).first()
         if admin and admin.password.strip() == password_input:
             session['user_email'] = admin.email
             session['role'] = 'admin'
-            session['login_ts'] = datetime.utcnow()
-
-            # Log activity
-            log = ActivityLog(
-                email=admin.email,
-                action="Admin logged in",
-                event_type="LOGIN",
-                timestamp=datetime.utcnow()
-            )
-            db.session.add(log)
+            session['login_ts'] = datetime.utcnow().isoformat()
+            # log
+            db.session.add(ActivityLog(email=admin.email, action="Admin logged in", event_type="LOGIN", timestamp=datetime.utcnow()))
             db.session.commit()
-
             flash("✅ Logged in as Admin.", "success")
-            return redirect(url_for("main.index"))
+            return redirect(url_for('main.index'))
 
-        # -------------------
-        # Check Allowed User
-        # -------------------
         user = AllowedUser.query.filter(func.lower(AllowedUser.email) == email_input).first()
         if user and user.password.strip() == password_input:
             session['user_email'] = user.email
             session['role'] = 'user'
-            session['login_ts'] = datetime.utcnow()
-
-            # Log activity
-            log = ActivityLog(
-                email=user.email,
-                action="Allowed user logged in",
-                event_type="LOGIN",
-                timestamp=datetime.utcnow()
-            )
-            db.session.add(log)
+            session['login_ts'] = datetime.utcnow().isoformat()
+            db.session.add(ActivityLog(email=user.email, action="Allowed user logged in", event_type="LOGIN", timestamp=datetime.utcnow()))
             db.session.commit()
-
             flash("✅ Logged in successfully.", "success")
-            return redirect(url_for("main.index"))
+            # Allowed users must be redirected directly to bulk update
+            return redirect(url_for('main.bulk_update'))
 
-        # -------------------
-        # Invalid credentials
-        # -------------------
-        flash("❌ Invalid email or password.", "danger")
-        return render_template("login.html")
+        flash("Invalid credentials.", "danger")
+        return redirect(url_for('auth.login'))
 
-    # -------------------
-    # GET request – show login page
-    # -------------------
-    return render_template("login.html")
+    # GET -> render login page
+    return render_template('login.html')
 # ---------------------------------------------
 # LOGOUT
 # ---------------------------------------------
