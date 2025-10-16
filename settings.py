@@ -46,7 +46,7 @@ LOGGING = {
     },
     # Root logger configuration: captures everything
     'root': {
-        'level': os.environ.get('LOG_LEVEL', 'INFO'), # Default to INFO level
+        'level': os.environ.get('LOG_LEVEL', 'INFO'), # Default to INFO level 
         'handlers': ['console', 'file'],
     },
 }
@@ -59,5 +59,6 @@ logger = logging.getLogger('📞 Zoom Caller ID Manage')
 
 # Convenience variable for the log file path (optional, but helpful)
 LOG_FILE_PATH = LOG_FILE
+
 
 
