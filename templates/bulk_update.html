@@ -14,31 +14,30 @@
     </div>
 
     <div class="card card-rounded shadow-sm mb-3 p-3">
-        <form id="single-update-form" class="row g-2">
+        <form id="single-update-form"  class="row g-2"  method="post" action="{{url_for("main.single_update")}}" >
             <div class="col-md-5">
-                <input type="email" id="single-email" class="form-control" placeholder="User email (e.g. user@company.com)" required>
+                <input type="email" id="single-email" name="single-email" class="form-control" placeholder="User email (e.g. user@company.com)" required>
             </div>
             <div class="col-md-5">
-                <input type="text" id="single-caller-id" class="form-control" placeholder="Caller ID (e.g. +1234567890)" required>
+                <input type="text" id="single-caller-id" name="single-caller-id" class="form-control" placeholder="Caller ID (e.g. +1234567890)" required>
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-primary w-100">Update</button>
+               
             </div>
         </form>
     </div>
 
     <div class="card card-rounded shadow-sm mb-4 p-3">
         <h5 class="mb-3">Bulk Upload</h5>
-        <form id="bulk-upload-form" enctype="multipart/form-data" class="row g-2 align-items-center">
+        <form id="bulk-upload-form" enctype="multipart/form-data" action="{{url_for("main.bulk_update_file")}}"  method="post" class="row g-2 align-items-center">
             <div class="col-md-6">
-                <input type="file" id="bulk-file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>
+                <input type="file" id="file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>
             </div>
             <div class="col-md-2">
-                <button id="upload-bulk-btn" type="button" class="btn btn-outline-primary w-100">Upload</button>
+                <button id="upload-bulk-btn" type="submit" class="btn btn-outline-primary w-100">Upload</button>
             </div>
-            <div class="col-md-2">
-                <button id="apply-bulk-btn" type="button" class="btn btn-primary w-100" disabled>Apply Bulk Update</button>
-            </div>
+           
             <div class="col-md-2">
                 <button id="download-bulk-btn" type="button" class="btn btn-outline-success w-100" disabled>Download Template</button>
             </div>
@@ -64,6 +63,9 @@
 
 {% block scripts %}
 <script>
+
+single_upload_fun(item)
+    alert("hello")
 document.addEventListener('DOMContentLoaded', function(){
 
     alert("hello sanjita");
@@ -90,9 +92,12 @@ document.addEventListener('DOMContentLoaded', function(){
     const singleForm = document.getElementById('single-update-form');
     singleForm.addEventListener('submit', async (e)=>{
         e.preventDefault();
+        alert("Hello")
         const email = document.getElementById('single-email').value.trim();
         const caller_id = document.getElementById('single-caller-id').value.trim();
         if(!email || !caller_id){ alert('Email and Caller ID are required'); return; }
+        alert(email)
+        alert(caller_id)
 
         try{
             let btn = e.submitter;

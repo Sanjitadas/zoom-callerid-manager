@@ -36,6 +36,9 @@ SESSION_LAST_UPDATE_TS = "bulk_update_ts"
 # The actual logic resides in your external utils and template rendering setup.
 
 # Updated Zoom API function with real token usage
+
+
+
 def update_zoom_user(email, new_callerid):
     """
     Update Zoom Phone Caller ID via Zoom API and return status + reason
@@ -455,56 +458,42 @@ def ajax_update_callerid():
         "updated_by": rec.updated_by,
         "updated_ts": rec.updated_ts.isoformat()
     })
-@main_bp.route('/bulk_update', methods=['GET'])
-def bulk_update_get():
-    print("Get method called : ")
-    return render_template('bulk_update.html')
+
+
 # ---------------- Bulk Update ----------------
-@main_bp.route('/bulk_update', methods=['POST'])
+@main_bp.route('/bulk_update')
 def bulk_update():
-    if request.method == 'POST':
-        file = request.files.get('excel_file')
-        if not file:
+    return render_template('bulk_update.html')
+
+@main_bp.route('/single_update',methods=["POST"])
+def single_update():
+    print("hello")
+    email=request.form.get("single-email")
+    outboundkey=request.form.get("single-caller-id")
+    update_zoom_user(email,outboundkey)
+    return render_template('bulk_update.html')
+
+
+@main_bp.route('/bulk_update_file',methods=["POST"])
+def bulk_update_file():
+    print("hello")
+    file = request.files.get('file')
+    if not file:
             flash("No file uploaded", "danger")
-            return redirect('/bulk_update')
-
-        filename = secure_filename(file.filename)
-        df = pd.read_excel(file)
-
-        # Expected columns: email, new_caller_id, reason
-        for index, row in df.iterrows():
-            email = row.get('email')
-            new_caller_id = row.get('new_caller_id')
-            reason = row.get('reason', 'Bulk update')
-
-            user = AllowedUser.query.filter_by(email=email).first()
-            if not user:
-                continue  # Skip if user not found
-
-            old_caller_id = user.password  # Or use another field if CallerID stored separately
-
-            # Update CallerID (your business logic)
-            user.password = new_caller_id  # example: updating password as caller ID
-            db.session.add(user)
-
-            # Log in BulkUpdateLog
-            bulk_log = BulkUpdateLog(
-                email=email,
-                old_caller_id=old_caller_id,
-                new_caller_id=new_caller_id,
-                updated_by="admin",  # replace with current_user.email if using Flask-Login
-                reason=reason,
-                status="Success"
-            )
-            db.session.add(bulk_log)
-
-        db.session.commit()
+    filename = secure_filename(file.filename)
+    df = pd.read_excel(file)
+    # Expected columns: email, new_caller_id, reason
+    for index, row in df.iterrows():
+        email = row[0]
+        new_caller_id = row[1]
+        reason = row.get('reason', 'Bulk update')
+        user = AllowedUser.query.filter_by(email=email).first()
+        update_zoom_user(email,new_caller_id)
+        
         flash("Bulk update completed!", "success")
-        return redirect('/bulk_update')
 
-    # GET request: show existing bulk updates
-    logs = BulkUpdateLog.query.order_by(BulkUpdateLog.timestamp.desc()).all()
-    return render_template('bulk_update.html', logs=logs)
+    return render_template('bulk_update.html')
+
 @main_bp.route("/ajax_bulk_upload", methods=["POST"])
 @login_required
 def ajax_bulk_upload():

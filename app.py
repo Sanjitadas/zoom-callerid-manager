@@ -7,18 +7,18 @@ from extensions import db, bcrypt, mail, login_manager
 from models import Admin, AllowedUser
 import logging.config
 from settings import LOGGING  # centralized logging config
-
+import os
 from auth import auth_bp
 from routes import main_bp
 # 🚨 FIX: Import the helper functions used in templates
 from routes import render_unified_report, render_table 
 
-
 def create_app():
     app = Flask(__name__)
     app.debug=True
     app.config.from_object("config.Config")
-
+    UPLOAD_FOLDER='uploads'
+    os.makedirs(UPLOAD_FOLDER,exist_ok=True)
     # Initialize extensions
     db.init_app(app)
     bcrypt.init_app(app)
