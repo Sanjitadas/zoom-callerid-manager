@@ -79,9 +79,7 @@
                                 <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '-' }}</td>
                                 <td id="user-password-{{ user.id }}">{{ user.default_password or '-' }}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-warning me-1" onclick="resetPassword('user', {{ user.id }})">
-                                        <i class="bi bi-key"></i>
-                                    </button>
+                                    
                                     <form method="POST" action="{{ url_for('main.delete_access_user', user_id=user.id) }}" class="d-inline">
                                         <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove this user?')">
                                             <i class="bi bi-x-circle"></i>

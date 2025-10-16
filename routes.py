@@ -850,34 +850,6 @@ def manage_admins_access():
 
     return render_template("manage_admins_access.html", admins=admins, access_users=access_users)
 
-@main_bp.route("/ajax/reset_password/<string:user_type>/<int:user_id>", methods=["POST"])
-@login_required
-@admin_required
-def ajax_reset_password(user_type, user_id):
-    try:
-        new_password = "DefaultPass123!"
-        if user_type == "allowed":
-            user = AllowedUser.query.get_or_404(user_id)
-        elif user_type == "admin":
-            user = Admin.query.get_or_404(user_id)
-        else:
-            return jsonify({"status": "error", "message": "Invalid user type."}), 400
-
-        old_email = user.email
-        user.password = new_password
-        user.default_password = new_password
-        db.session.commit()
-
-        log_activity("RESET_PASSWORD", user_email=session.get("user_email"),
-                     details=f"Reset password for {user_type} {old_email}")
-
-        return jsonify({"status": "success", "message": f"Password reset to default for {old_email}",
-                         "new_password": new_password,
-                         "table_html": render_table(user_type if user_type == "allowed" else "admins")})
-    except Exception as e:
-        current_app.logger.exception("ajax_reset_password error: %s", e)
-        return jsonify({"status": "error", "message": f"Server error: {e}"}), 500
-
 @main_bp.route("/edit_user/<string:user_type>/<int:user_id>", methods=["POST"])
 @admin_required
 @login_required
