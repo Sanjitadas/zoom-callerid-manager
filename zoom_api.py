@@ -1,119 +1,123 @@
 # zoom_api.py
 import requests
-import pandas as pd
 import time
-from zoom_token import get_headers, BASE_URL
+import random
+import json
+# Import necessary components from the zoom_token file
+from zoom_token import get_access_token, BASE_URL 
+# Assuming you have a 'logger' configured in settings.py
+from settings import logger 
 
-MAX_RETRIES = 3
-RETRY_DELAY = 2  # seconds
+# --- Helper Functions (Simulated Zoom Lookups) ---
 
-def _request_with_retry(method, url, **kwargs):
+def get_zoom_user_id(user_email):
     """
-    Helper function to handle Zoom API requests with retries on failure.
+    Fetches the Zoom User ID from an email. This ID is required for the URL.
+    In a real application, this calls GET /users?status=active&email={email}.
     """
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            resp = requests.request(method, url, **kwargs)
-            if resp.status_code in (200, 204):
-                return resp
-            elif resp.status_code == 429:
-                wait = int(resp.headers.get("Retry-After", RETRY_DELAY))
-                print(f"⚠️ Rate limit reached. Retrying in {wait} seconds...")
-                time.sleep(wait)
-            else:
-                resp.raise_for_status()
-        except Exception as e:
-            if attempt < MAX_RETRIES:
-                print(f"⚠️ Attempt {attempt} failed: {e}. Retrying in {RETRY_DELAY}s...")
-                time.sleep(RETRY_DELAY)
-            else:
-                print(f"❌ Failed after {MAX_RETRIES} attempts: {e}")
-                return None
-    return None
-
-def update_line_key(user_email: str, caller_id: str):
-    """
-    Updates the primary outbound caller ID for a Zoom user (single line key update).
-    Returns structured response.
-    """
+    token = get_access_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Zoom endpoint to get user details by email
+    # Zoom often uses the email as a path variable, but fetching the internal ID
+    # is safer for subsequent calls. We use the email/ID directly here as Zoom
+    # often allows it for the path, or the calling code already provides the ID.
+    lookup_url = f"{BASE_URL}/users/{user_email}"
     try:
-        # 1. Get user info by email
-        url_user = f"{BASE_URL}/users/{user_email}"
-        resp = _request_with_retry("GET", url_user, headers=get_headers())
-        if not resp:
-            return {"status": "failed", "reason": "No response from Zoom API", "response": None}
-
-        user = resp.json()
-        user_id = user.get("id")
-        if not user_id:
-            return {"status": "failed", "reason": "User not found", "response": user}
-
-        # 2. Get list of phone numbers / line keys
-        url_numbers = f"{BASE_URL}/phone/users/{user_id}/numbers"
-        resp = _request_with_retry("GET", url_numbers, headers=get_headers())
-        if not resp:
-            return {"status": "failed", "reason": "No response from Zoom API", "response": None}
-
-        numbers = resp.json().get("numbers", [])
-        if not numbers:
-            return {"status": "failed", "reason": "No phone numbers assigned", "response": numbers}
-
-        # Update first main line key (usually primary)
-        line_key_id = numbers[0]["id"]
-        url_update = f"{BASE_URL}/phone/users/{user_id}/line_keys/{line_key_id}"
-        payload = {
-            "caller_id_name": user_email.split("@")[0],
-            "caller_id_number": caller_id
-        }
-
-        resp = _request_with_retry("PATCH", url_update, json=payload, headers=get_headers())
-        if not resp:
-            return {"status": "failed", "reason": "No response from Zoom API", "response": None}
-
-        response_data = {}
-        if resp.content:
-            try:
-                response_data = resp.json()
-            except:
-                response_data = {}
-
-        return {"status": "success", "extension": numbers[0].get("extension_number"),
-                "line_key_id": line_key_id, "response": response_data}
-
+        response = requests.get(lookup_url, headers=headers)
+        response.raise_for_status()
+        user_data = response.json()
+        # Return the Zoom User ID if found, otherwise the email (Zoom often accepts the email)
+        return user_data.get('id', user_email) 
     except Exception as e:
-        return {"status": "failed", "reason": str(e), "response": None}
+        logger.warning(f"Failed to fetch Zoom User ID for {user_email}. Falling back to email/ID. Error: {e}")
+        return user_email
 
-def bulk_update_line_keys(file_path: str, email_column: str = "email", caller_id_column: str = "caller_id"):
+
+# --- Core Update Function (Fix for 400 Error) ---
+
+def update_line_key(user_email, new_caller_id):
     """
-    Bulk update Zoom users' caller IDs from an Excel/CSV file.
-    Expects columns: email, caller_id
-    Returns list of results per user.
+    Updates the outbound caller ID for a Zoom Phone user with retry logic.
+    
+    CRITICAL FIX: Uses the 'json' parameter in requests.patch to fix the 
+    'Request Body should be a valid JSON object' (Error 400) issue.
     """
-    results = []
+    max_retries = 3
+    
+    # Step 1: Get Zoom User ID (Ensure we use the correct identifier for the URL)
+    # The actual user ID from the log is what we need in the URL path: -0lqj-mPTiqVE0uLuNA_eA
+    zoom_user_id = get_zoom_user_id(user_email)
+    
+    # Step 2: Construct the API URL
+    url = f"{BASE_URL}/phone/users/{zoom_user_id}/settings"
+    
+    # Step 3: Determine the payload (This is the standard structure for Caller ID update)
+    # NOTE: 'external_id' should ideally be the Zoom Phone Number ID, not the number string. 
+    # For now, we use the number, but be aware this may cause a different API error later if 
+    # Zoom's API requires the internal ID.
+    payload = {
+        "caller_id": {
+            "external_id": new_caller_id, 
+            "display_external_caller_id": True
+        }
+    }
+    
+    logger.info(f"Attempting update for {user_email} ({zoom_user_id}) with payload: {json.dumps(payload)}")
 
-    # Load file
-    if file_path.endswith(".csv"):
-        df = pd.read_csv(file_path)
-    else:
-        df = pd.read_excel(file_path)
-
-    df.columns = [c.lower() for c in df.columns]  # normalize columns
-
-    for index, row in df.iterrows():
+    for attempt in range(1, max_retries + 1):
         try:
-            email = str(row.get(email_column.lower(), "")).strip()
-            caller_id = str(row.get(caller_id_column.lower(), "")).strip()
-            if email and caller_id:
-                print(f"🔄 Updating {email} to caller ID {caller_id}...")
-                result = update_line_key(email, caller_id)
+            token = get_access_token()
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }
+
+            # --- CRITICAL FIX: Use the 'json' parameter! ---
+            response = requests.patch(
+                url,
+                headers=headers,
+                json=payload # <-- THIS FIXES THE 'Request Body should be a valid JSON object'
+            )
+            
+            # Check for API success (204 No Content is common for PATCH/PUT updates)
+            if response.status_code in [200, 204]:
+                logger.info(f"✅ Update successful for {user_email} on attempt {attempt}.")
+                return {"status": "success", "reason": "Caller ID updated successfully."}
+            
+            # Check for other HTTP errors (4xx or 5xx)
+            response.raise_for_status()
+            
+        except requests.exceptions.HTTPError as e:
+            # Extract error message from response text if available
+            error_details = response.json().get('message', response.text) if response.text else 'Unknown HTTP Error'
+            logger.error(f"❌ API Error {response.status_code} on attempt {attempt}: {error_details}")
+            
+            if attempt < max_retries:
+                # Exponential backoff with jitter
+                retry_in = 2 ** attempt + random.uniform(0, 1) 
+                logger.warning(f"⚠️ Attempt {attempt} failed: {e}. Retrying in {retry_in:.1f}s...")
+                time.sleep(retry_in)
             else:
-                result = {"status": "failed", "reason": "Missing email or caller_id", "response": None}
-        except Exception as e:
-            result = {"status": "failed", "reason": str(e), "response": None}
+                logger.error(f"❌ Failed after {max_retries} attempts: {e}")
+                return {"status": "failed", "reason": f"API Error {response.status_code}: {error_details}"}
+                
+        except requests.exceptions.RequestException as e:
+            # Catch connection or timeout errors
+            logger.error(f"❌ Connection Error on attempt {attempt}: {e}")
+            if attempt < max_retries:
+                retry_in = 2 ** attempt + random.uniform(0, 1)
+                logger.warning(f"⚠️ Attempt {attempt} failed: Connection issue. Retrying in {retry_in:.1f}s...")
+                time.sleep(retry_in)
+            else:
+                logger.error(f"❌ Failed after {max_retries} attempts: Connection error.")
+                return {"status": "failed", "reason": f"Connection Error: {e}"}
+                
+    # Fallback return
+    return {"status": "failed", "reason": "Failed after all retries (check logs for details)."}
 
-        results.append({"email": email, "caller_id": caller_id, **result})
 
-    return results
+
 
 
 

@@ -1,52 +1,94 @@
-<table class="table table-striped table-hover" id="bulk-table">
-    <thead>
-        <tr>
-            <th><input type="checkbox" id="select-all"></th>
-            <th>Email</th>
-            <th>Outbound Caller ID</th>
-            <th>Inline Edit</th>
-            <th>Status</th>
-            <th>Updated By</th>
-            <th>Timestamp</th>
-            <th>Update</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% if uploaded_data %}
+<div class="table-responsive">
+    <table class="table table-hover table-bordered align-middle">
+        <thead class="table-primary">
+            <tr>
+                <th scope="col">
+                    <input type="checkbox" id="select_all_bulk">
+                </th>
+                <th scope="col">Email</th>
+                <th scope="col">Outbound Caller ID</th>
+                <th scope="col">Status</th>
+            </tr>
+        </thead>
+        <tbody>
             {% for row in uploaded_data %}
-            <tr data-email="{{ row.email }}">
-                <td><input type="checkbox" class="row-checkbox" data-email="{{ row.email }}"></td>
-                <td>{{ row.email }}</td>
-                <td class="caller-id-display">{{ row.outbound_caller_id }}</td>
+            <tr>
                 <td>
-                    <input type="text" class="form-control form-control-sm inline-cid"
-                           value="{{ row.outbound_caller_id }}" style="width: 150px;">
+                    <input type="checkbox" class="bulk-checkbox" data-email="{{ row.email }}">
+                </td>
+                <td>{{ row.email }}</td>
+                <td contenteditable="true" class="editable-cid" data-email="{{ row.email }}">
+                    {{ row.outbound_caller_id or '' }}
                 </td>
                 <td>
                     {% if row.status %}
-                        {% if row.status == "Success" %}
-                            <span class="badge bg-success">Success</span>
+                        {% if 'success' in row.status|lower %}
+                            <span class="badge bg-success">{{ row.status }}</span>
+                        {% elif 'failed' in row.status|lower %}
+                            <span class="badge bg-danger">{{ row.status }}</span>
                         {% else %}
-                            <span class="badge bg-danger" title="{{ row.reason or 'Unknown error' }}">Failed</span>
+                            <span class="badge bg-warning">{{ row.status }}</span>
                         {% endif %}
                     {% else %}
                         <span class="badge bg-secondary">Pending</span>
                     {% endif %}
                 </td>
-                <td class="updated-by">{{ row.updated_by or '-' }}</td>
-                <td class="updated-ts">{{ row.updated_ts or '-' }}</td>
-                <td>
-                    <button class="btn btn-sm btn-primary btn-update-row">Update</button>
-                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="text-center text-muted">No bulk data available.</td>
             </tr>
             {% endfor %}
-        {% else %}
-            <tr>
-                <td colspan="8" class="text-muted text-center">No recent updates to show.</td>
-            </tr>
-        {% endif %}
-    </tbody>
-</table>
+        </tbody>
+    </table>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Select / Deselect All
+    const selectAll = document.getElementById("select_all_bulk");
+    selectAll.addEventListener("change", function() {
+        document.querySelectorAll(".bulk-checkbox").forEach(cb => {
+            cb.checked = selectAll.checked;
+        });
+    });
+
+    // Inline edit event
+    document.querySelectorAll(".editable-cid").forEach(td => {
+        td.addEventListener("blur", function() {
+            const email = td.dataset.email;
+            const newCid = td.innerText.trim();
+            if (!newCid) return;
+
+            fetch("{{ url_for('main.ajax_inline_bulk_update') }}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email, caller_id: newCid })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success") {
+                    // Update the table container with fresh HTML
+                    document.getElementById("bulk_table_container").innerHTML = data.table_html;
+                } else {
+                    alert("Error updating Caller ID: " + data.message);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Server error during inline edit.");
+            });
+        });
+    });
+});
+</script>
+
+
+
+
+
+
+
 
 
 

@@ -1,252 +1,243 @@
 {% extends "base.html" %}
+{% block title %}Outbound Caller ID - BlackBox Zoom CID Portal{% endblock %}
 
 {% block content %}
-<div class="container my-4">
-    <h2 class="mb-4 text-primary">Outbound Caller ID Update</h2>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Outbound Caller ID Update</h2>
+            <div class="small text-muted">Use single update or upload Excel for bulk updates</div>
+        </div>
+        <div>
+            <span class="text-muted small">Signed in as <strong>{{ session.get('user_email') }}</strong></span>
+        </div>
+    </div>
 
-    <!-- Single Update Form -->
-    <div class="card mb-3 p-3">
-        <form id="single-update-form" class="row g-2 align-items-center">
-            <div class="col-md-4">
-                <input type="email" name="email" id="single-email" class="form-control" placeholder="User email" required>
+    <div class="card card-rounded shadow-sm mb-3 p-3">
+        <form id="single-update-form" class="row g-2">
+            <div class="col-md-5">
+                <input type="email" id="single-email" class="form-control" placeholder="User email (e.g. user@company.com)" required>
             </div>
-            <div class="col-md-4">
-                <input type="text" name="caller_id" id="single-caller-id" class="form-control" placeholder="Caller ID (e.g. +123456789)" required>
+            <div class="col-md-5">
+                <input type="text" id="single-caller-id" class="form-control" placeholder="Caller ID (e.g. +1234567890)" required>
             </div>
             <div class="col-md-2">
-                <button type="submit" class="btn btn-primary">Update Single</button>
+                <button type="submit" class="btn btn-primary w-100">Update</button>
             </div>
         </form>
     </div>
 
-    <!-- Bulk Upload Section -->
-    <div class="card mb-4 p-3 shadow-sm">
-        <form id="bulk-upload-form" enctype="multipart/form-data">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <input type="file" name="file" id="bulk-file" class="form-control" accept=".xlsx,.xls" required>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-success">Upload</button>
-                </div>
+    <div class="card card-rounded shadow-sm mb-4 p-3">
+        <h5 class="mb-3">Bulk Upload</h5>
+        <form id="bulk-upload-form" enctype="multipart/form-data" class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <input type="file" id="bulk-file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>
+            </div>
+            <div class="col-md-2">
+                <button id="upload-bulk-btn" type="button" class="btn btn-outline-primary w-100">Upload</button>
+            </div>
+            <div class="col-md-2">
+                <button id="apply-bulk-btn" type="button" class="btn btn-primary w-100" disabled>Apply Bulk Update</button>
+            </div>
+            <div class="col-md-2">
+                <button id="download-bulk-btn" type="button" class="btn btn-outline-success w-100" disabled>Download Template</button>
             </div>
         </form>
+
+        <div id="callerid-table-container" class="mt-3">
+            {% if session.get('bulk_data') %}
+                {{ render_table("bulk")|safe }}
+            {% else %}
+                <div class="text-muted">No bulk data uploaded yet.</div>
+            {% endif %}
+        </div>
     </div>
 
-    <!-- Bulk Actions -->
-    <div class="mb-3 d-flex gap-2 align-items-center">
-        <button class="btn btn-primary" id="apply-bulk-btn" disabled>Apply Bulk Update</button>
-        <button class="btn btn-secondary" id="download-bulk-btn" disabled>Download Updated Template</button>
-        <span class="text-muted" id="bulk-status"></span>
-    </div>
-
-    <!-- Updates Table -->
-    <div id="callerid-table-container">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th><input type="checkbox" id="select-all"></th>
-                    <th>Email</th>
-                    <th>Outbound Caller ID</th>
-                    <th>Status</th>
-                    <th>Reason</th>
-                    <th>Updated By</th>
-                    <th>Updated Time</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for u in uploaded_data %}
-                <tr data-email="{{ u.email }}">
-                    <td><input type="checkbox" class="row-checkbox" data-email="{{ u.email }}"></td>
-                    <td>{{ u.email }}</td>
-                    <td class="caller-id-display">{{ u.outbound_caller_id }}</td>
-                    <td>{% if u.status %}<span class="badge bg-success">Success</span>{% else %}<span class="badge bg-danger">Failed</span>{% endif %}</td>
-                    <td>{{ u.reason }}</td>
-                    <td class="updated-by">{{ u.updated_by }}</td>
-                    <td class="updated-ts">{{ u.updated_ts }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Dashboard Count Example -->
-    <div class="mt-3">
-        <h5>Total Caller ID Updates: <span id="total-callerid-updates">{{ total_callerid_updates }}</span></h5>
+    <div class="card card-rounded shadow-sm p-3">
+        <h5 class="mb-3">Unified Update Report</h5>
+        <div id="callerid-report-container">
+            {{ render_unified_report()|safe }}
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-$(document).ready(function() {
-    // ---------- Single Update ----------
-    $("#single-update-form").submit(function(e) {
+document.addEventListener('DOMContentLoaded', function(){
+
+    // Bulk elements
+    const uploadBtn = document.getElementById('upload-bulk-btn');
+    const fileInput = document.getElementById('bulk-file');
+    const applyBtn = document.getElementById('apply-bulk-btn');
+    const downloadBtn = document.getElementById('download-bulk-btn');
+    const tableContainer = document.getElementById('callerid-table-container');
+
+    // Check session data on load (initial state)
+    {% if session.get('bulk_data') %}
+        applyBtn.disabled = false;
+        downloadBtn.disabled = false;
+    {% endif %}
+
+    // ---- Single Update ----
+    const singleForm = document.getElementById('single-update-form');
+    singleForm.addEventListener('submit', async (e)=>{
         e.preventDefault();
-        const email = $("#single-email").val().trim();
-        const caller_id = $("#single-caller-id").val().trim();
-        if (!email || !caller_id) { alert("Email and Caller ID required."); return; }
+        const email = document.getElementById('single-email').value.trim();
+        const caller_id = document.getElementById('single-caller-id').value.trim();
+        if(!email || !caller_id){ alert('Email and Caller ID are required'); return; }
 
-        $.ajax({
-            url: "{{ url_for('main.ajax_update_callerid') }}",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({ email, caller_id }),
-            success: function(resp) {
-                if(resp.status === "success") {
-                    const row = $(`tr[data-email='${email}']`);
-                    if(row.length){
-                        row.find(".caller-id-display").text(caller_id);
-                        row.find("td:nth-child(4)").html('<span class="badge bg-success">Success</span>');
-                        row.find(".updated-by").text(resp.updated_by);
-                        row.find(".updated-ts").text(resp.updated_ts);
-                    } else location.reload();
-                } else alert(resp.message || "Failed");
-            },
-            error: function(err){ alert("Server error"); console.error(err); }
-        });
+        try{
+            let btn = e.submitter;
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
+
+            const res = await fetch("{{ url_for('main.ajax_update_callerid') }}", {
+                method: "POST",
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({email, caller_id})
+            });
+            const data = await res.json();
+            
+            btn.disabled = false;
+            btn.textContent = 'Update';
+
+            if(data.status === 'success'){
+                alert("Updated successfully");
+                // Refresh the report partial after success
+                refreshUnifiedReport();
+            } else {
+                alert("Failed: " + (data.message || 'server error'));
+            }
+        }catch(err){ 
+            console.error(err); 
+            alert("Server error during single update"); 
+            e.submitter.disabled = false;
+            e.submitter.textContent = 'Update';
+        }
     });
 
-    // ---------- Bulk Upload ----------
-    $("#bulk-upload-form").submit(function(e) {
-        e.preventDefault();
-        let formData = new FormData(this);
-        $.ajax({
-            url: "{{ url_for('main.ajax_bulk_update_file') }}",
-            type: "POST",
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(resp) {
-                if(resp.status==="success"){
-                    $("#callerid-table-container").html(resp.updated_table_html);
-                    $("#bulk-status").text("✅ File uploaded successfully.");
-                    $("#apply-bulk-btn").prop("disabled", false);
-                    $("#download-bulk-btn").prop("disabled", true);
-                } else alert(resp.message || "Upload failed");
-            },
-            error: function(err){ alert("Upload failed"); console.error(err); }
-        });
+    // ---- Bulk Upload ----
+    uploadBtn.addEventListener('click', async ()=>{
+        if(!fileInput.files.length){ alert('Select a file first'); return; }
+        
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Processing...';
+        applyBtn.disabled = true;
+        downloadBtn.disabled = true;
+
+        const form = new FormData();
+        form.append('file', fileInput.files[0]);
+        
+        try{
+            const res = await fetch("{{ url_for('main.ajax_bulk_upload') }}", { 
+                method: "POST", 
+                body: form 
+            });
+
+            const data = await res.json(); 
+            
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = 'Upload';
+
+            if(data.status === 'success'){
+                tableContainer.innerHTML = data.table_html || "<div class='text-success'>Uploaded</div>";
+                applyBtn.disabled = false;
+                downloadBtn.disabled = false;
+                alert(data.message || "File uploaded and data ready for review.");
+            } else { 
+                alert("Upload failed: " + (data.message || "File parsing error. Check headers and file type.")); 
+            }
+        }catch(e){ 
+            console.error(e); 
+            alert('Upload error: Could not reach the server.'); 
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = 'Upload';
+            applyBtn.disabled = true; 
+            downloadBtn.disabled = true;
+        }
     });
 
-    // ---------- Apply Bulk Update ----------
-    $("#apply-bulk-btn").click(function(){
-        let selectedEmails = $(".row-checkbox:checked").map(function(){ return $(this).data("email"); }).get();
-        if(selectedEmails.length===0){ alert("Select at least one user"); return; }
+    // ---- Apply Bulk Update ----
+    applyBtn.addEventListener('click', async ()=>{
+        const checks = document.querySelectorAll('input.bulk-select:checked');
+        if(!checks.length){ alert('Select at least one user in bulk list.'); return; }
+        const selected = Array.from(checks).map(c=>c.value);
+        
+        applyBtn.disabled = true;
+        applyBtn.textContent = 'Applying...';
 
-        $(this).prop("disabled", true);
-        $("#bulk-status").text("⏳ Applying updates...");
+        try{
+            const res = await fetch("{{ url_for('main.ajax_apply_bulk_update') }}", {
+                method: "POST",
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({selected_users:selected})
+            });
+            const data = await res.json();
+            
+            applyBtn.disabled = false;
+            applyBtn.textContent = 'Apply Bulk Update';
 
-        $.ajax({
-            url: "{{ url_for('main.ajax_apply_bulk_update') }}",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({ selected_users: selectedEmails }),
-            success: function(resp){
-                if(resp.status==="success"){
-                    resp.results.forEach(r => {
-                        let row = $(`tr[data-email='${r.email}']`);
-                        row.find(".caller-id-display").text(r.caller_id);
-                        row.find("td:nth-child(4)").html(r.success
-                            ? `<span class="badge bg-success">Success</span>`
-                            : `<span class="badge bg-danger" title="${r.reason || 'Failed'}">Failed</span>`);
-                        row.find(".updated-by").text(r.updated_by);
-                        row.find(".updated-ts").text(r.updated_ts);
-                    });
-                    $("#bulk-status").text(`✅ ${resp.message}`);
-                    $("#download-bulk-btn").prop("disabled", false);
-                } else {
-                    alert(resp.message || "Bulk update failed");
-                    $("#apply-bulk-btn").prop("disabled", false);
+            if(data.status === 'success'){
+                document.getElementById('callerid-report-container').innerHTML = data.updated_report_html || 'Updated';
+                alert(`Bulk update applied successfully to ${selected.length} users!`);
+                
+                document.getElementById('callerid-table-container').innerHTML = '<div class="text-muted">No bulk data uploaded yet.</div>';
+                applyBtn.disabled = true;
+                downloadBtn.disabled = false; 
+                
+            } else { alert('Bulk update failed: ' + (data.message||'')); }
+        }catch(err){ 
+            console.error(err); 
+            alert('Server error during bulk application.');
+            applyBtn.disabled = false;
+            applyBtn.textContent = 'Apply Bulk Update';
+        }
+    });
+
+    // ---- Download Template ----
+    downloadBtn.addEventListener('click', ()=> {
+        window.location.href = "{{ url_for('main.download_bulk_template') }}";
+    });
+    
+    // ---- Refresh Report Table ----
+    function refreshUnifiedReport() {
+        fetch("{{ url_for('main.ajax_refresh_report') }}")
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === "success"){
+                    // 🚨 FIXED: proper innerHTML assignment
+                    document.getElementById('callerid-report-container').innerHTML = data.updated_report_html;
                 }
-            },
-            error: function(err){ alert("Bulk update failed"); console.error(err); $("#apply-bulk-btn").prop("disabled", false);}
-        });
-    });
-
-    // ---------- Download Bulk Template ----------
-    $("#download-bulk-btn").click(function(){
-        $.ajax({
-            url: "{{ url_for('main.ajax_download_updated_template') }}",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({}),
-            xhrFields: { responseType: 'blob' },
-            success: function(blob, status, xhr){
-                let filename = "bulk_updated_template.xlsx";
-                const disposition = xhr.getResponseHeader('Content-Disposition');
-                if(disposition && disposition.indexOf('attachment')!=-1){
-                    const match = disposition.match(/filename="?([^"]+)"?/);
-                    if(match && match[1]) filename=match[1];
-                }
-                let link = document.createElement('a');
-                link.href = window.URL.createObjectURL(blob);
-                link.download = filename;
-                document.body.appendChild(link); link.click(); document.body.removeChild(link);
-                $("#bulk-status").text("✅ Download completed.");
-            },
-            error: function(err){ alert("Download failed"); console.error(err); }
-        });
-    });
-
-    // ---------- Inline Row Update ----------
-    $("#callerid-table-container").on("click",".btn-update-row",function(){
-        let row = $(this).closest("tr");
-        let email = row.data("email");
-        let cid = row.find(".inline-cid").val().trim();
-        if(!cid){ alert("Caller ID cannot be empty"); return; }
-
-        $.ajax({
-            url: "{{ url_for('main.ajax_update_row') }}",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({ email, caller_id: cid }),
-            success: function(resp){
-                if(resp.status==="success"){
-                    row.find(".caller-id-display").text(cid);
-                    row.find("td:nth-child(4)").html('<span class="badge bg-success">Success</span>');
-                    row.find(".updated-by").text(resp.updated_by);
-                    row.find(".updated-ts").text(resp.updated_ts);
-                } else alert(resp.message || "Failed");
-            },
-            error: function(err){ alert("Server error"); console.error(err); }
-        });
-    });
-
-    // ---------- Select/Deselect All ----------
-    $("#callerid-table-container").on("click","#select-all",function(){
-        $(".row-checkbox").prop("checked", this.checked);
-    });
-});
-
-// ---------- Auto-refresh Caller ID Table ----------
-async function refreshCallerIDTable() {
-  try {
-    const res = await fetch("{{ url_for('main.ajax_refresh_dashboard') }}");
-    const data = await res.json();
-    if (data.status === "success") {
-      // Update tbody
-      document.querySelector("#callerid-table-container tbody").innerHTML = data.recent_updates_html;
-      // Update total count card
-      const totalElem = document.querySelector("#total-callerid-updates");
-      if(totalElem) totalElem.textContent = data.total_callerid_updates;
+            })
+            .catch(err => console.error("Report refresh failed", err));
     }
-  } catch(err) {
-    console.error("Failed to refresh Caller ID table", err);
-  }
-}
-
-// Refresh every 15 seconds
-setInterval(refreshCallerIDTable, 15000);
-
-// Refresh immediately on page load if flash-success exists
-document.addEventListener("DOMContentLoaded", () => {
-  const flashSuccess = document.querySelector(".alert-success");
-  if (flashSuccess) refreshCallerIDTable();
+    
+    refreshUnifiedReport();
+    setInterval(refreshUnifiedReport, 15000);
 });
-
 </script>
 {% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
 
 
 

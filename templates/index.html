@@ -1,170 +1,146 @@
-<!-- templates/index.html -->
 {% extends "base.html" %}
+{% block title %}Dashboard - BlackBox Zoom CID Portal{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-
-  <!-- Dashboard Header -->
+{% if session.get('role') == 'admin' %}
+<div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-primary">Admin Dashboard</h2>
+    <div>
+      <h2 class="mb-0 fw-bold">Admin Dashboard</h2>
+      <div class="text-muted small mt-1">Manage callers, admins and view activity</div>
+    </div>
   </div>
 
-  <!-- Unified Summary Cards -->
-  <div class="row mb-4">
-    <div class="col-md-4 mb-3">
-      <div class="card text-center p-3 shadow-sm">
-        <h5>Total Admins</h5>
-        <h2 id="total-admins">{{ total_admins }}</h2>
-        <i class="bi bi-person-badge-fill fs-3 text-primary"></i>
-      </div>
-    </div>
-    <div class="col-md-4 mb-3">
-      <div class="card text-center p-3 shadow-sm">
-        <h5>Allowed Users</h5>
-        <h2 id="total-allowed-users">{{ total_allowed_users }}</h2>
-        <i class="bi bi-people-fill fs-3 text-success"></i>
-        <div class="d-flex justify-content-around mt-3">
+  <!-- summary cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-md-3">
+      <div class="card card-rounded shadow-sm p-3">
+        <div class="d-flex justify-content-between align-items-center">
           <div>
-            <span id="total-allowed-users-online" class="badge bg-success">{{ online_count }}</span>
-            <p class="mb-0">Online</p>
+            <small class="text-muted">Total Admins</small>
+            <div class="h4 fw-bold mb-0">{{ total_admins }}</div>
           </div>
-          <div>
-            <span id="total-allowed-users-offline" class="badge bg-danger">{{ offline_count }}</span>
-            <p class="mb-0">Offline</p>
-          </div>
+          <i class="bi bi-person-badge-fill fs-2 text-muted"></i>
         </div>
       </div>
     </div>
-    <div class="col-md-4 mb-3">
-      <div class="card text-center p-3 shadow-sm">
-        <h5>Caller ID Updates</h5>
-        <h2 id="total-callerid-updates">{{ total_callerid_updates }}</h2>
-        <i class="bi bi-telephone-fill fs-3 text-warning"></i>
+
+    <div class="col-sm-6 col-md-3">
+      <div class="card card-rounded shadow-sm p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <small class="text-muted">Allowed Users</small>
+            <div class="h4 fw-bold mb-0">{{ total_allowed_users }}</div>
+          </div>
+          <i class="bi bi-people-fill fs-2 text-muted"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+      <div class="card card-rounded shadow-sm p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <small class="text-muted">Caller ID Updates</small>
+            <div class="h4 fw-bold mb-0">{{ total_callerid_updates }}</div>
+          </div>
+          <i class="bi bi-upc-scan fs-2 text-muted"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+      <div class="card card-rounded shadow-sm p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <small class="text-muted">Online</small>
+            <div class="h4 fw-bold mb-0">{{ online_count }}</div>
+          </div>
+          <i class="bi bi-circle-fill fs-2 text-muted"></i>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Allowed Users Section -->
-  <div class="mb-5">
-    <h5 class="mb-3">Allowed Users</h5>
-    <div id="allowed-users-table">
-      {% include "partials/allowed_users_list.html" %}
+  <!-- Recent updates -->
+  <div class="card card-rounded shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <strong>Recent Caller ID Updates</strong>
+      <a href="{{ url_for('main.bulk_update') }}" class="btn btn-sm btn-outline-primary">Open Outbound Update</a>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Time</th><th>By</th><th>Type</th><th>Caller ID</th></tr>
+          </thead>
+          <tbody>
+            {% for u in dashboard_updates %}
+            <tr>
+              <td>{{ u.time }}</td>
+              <td>{{ u.user }}</td>
+              <td>
+                {% if u.update_type == 'S' %}
+                  <span class="badge bg-primary">Single</span>
+                {% else %}
+                  <span class="badge bg-success">Bulk</span>
+                {% endif %}
+              </td>
+              <td>{{ u.caller_id_number or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted">No updates yet</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- Recent Caller ID Updates Section -->
-  <div class="mb-5">
-    <h5 class="mb-3">Recent Caller ID Updates</h5>
-    <div id="recent-callerid-updates">
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>By User</th>
-            <th>Type</th>
-            <th>Caller ID</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for u in dashboard_updates %}
-          <tr>
-            <td>{{ u.time }}</td>
-            <td>{{ u.user }}</td>
-            <td>{{ u.update_type }}</td>
-            <td>{{ u.caller_id_number }}</td>
-          </tr>
-          {% endfor %}
-          {% if dashboard_updates|length == 0 %}
-          <tr>
-            <td colspan="4" class="text-muted text-center">No caller ID updates yet.</td>
-          </tr>
-          {% endif %}
-        </tbody>
-      </table>
+  <!-- Allowed users status -->
+  <div class="card card-rounded shadow-sm mb-4">
+    <div class="card-header bg-white"><strong>Allowed Users Status</strong></div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-striped mb-0">
+          <thead class="table-light">
+            <tr><th>Email</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for u in allowed_users %}
+            <tr>
+              <td>{{ u.email }}</td>
+              <td>
+                {% if u.email in online %}<span class="badge bg-success">Online</span>
+                {% else %}<span class="badge bg-secondary">Offline</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
-
 </div>
 
-<!-- AJAX Refresh Scripts -->
-<script>
-async function refreshCallerIDTable() {
-  try {
-    const res = await fetch("{{ url_for('main.ajax_refresh_dashboard') }}");
-    const data = await res.json();
-    if (data.status === "success") {
-      const tbody = document.querySelector("#recent-callerid-updates tbody");
-      if(tbody) {
-        tbody.innerHTML = data.recent_updates_html.trim() !== "" 
-          ? data.recent_updates_html 
-          : `<tr><td colspan="4" class="text-muted text-center">No caller ID updates yet.</td></tr>`;
-      }
+{% else %}
+  <!-- If an allowed user somehow hits index, forward them to bulk update link -->
+  <div class="text-center py-5">
+    <h3 class="fw-bold text-primary">Outbound Caller ID</h3>
+    <p class="text-muted">You can manage Outbound Caller ID from the page below.</p>
+    <a href="{{ url_for('main.bulk_update') }}" class="btn btn-sm btn-outline-primary">Open Outbound Update</a>
 
-      const totalElem = document.querySelector("#total-callerid-updates");
-      if(totalElem) totalElem.textContent = data.total_callerid_updates;
-    }
-  } catch(err) {
-    console.error("Failed to refresh Caller ID table", err);
-  }
-}
-
-async function refreshAllowedUsers() {
-  try {
-    const res = await fetch("{{ url_for('main.ajax_refresh_allowed_users') }}");
-    const data = await res.json();
-    if (data.status === "success") {
-      const container = document.querySelector("#allowed-users-table");
-      if (container) container.innerHTML = data.allowed_users_html;
-
-      const onlineBadge = document.querySelector("#total-allowed-users-online");
-      const offlineBadge = document.querySelector("#total-allowed-users-offline");
-      if(onlineBadge) onlineBadge.textContent = data.online_count;
-      if(offlineBadge) offlineBadge.textContent = data.offline_count;
-    }
-  } catch(err) {
-    console.error("Failed to refresh Allowed Users", err);
-  }
-}
-
-// Refresh every 15 seconds
-setInterval(refreshCallerIDTable, 15000);
-setInterval(refreshAllowedUsers, 15000);
-
-document.addEventListener("DOMContentLoaded", () => {
-  refreshCallerIDTable();
-  refreshAllowedUsers();
-});
-</script>
-
-<!-- Custom Styles -->
-<style>
-.badge {
-    font-size: 1rem;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: inline-block;
-    line-height: 20px;
-}
-
-/* Optional: Dark Theme */
-.dark-theme {
-    background-color: #121212;
-    color: #e0e0e0;
-}
-.dark-theme .card {
-    background-color: #1e1e1e;
-    color: #e0e0e0;
-}
-.dark-theme table.table {
-    color: #e0e0e0;
-}
-.dark-theme thead.table-light {
-    background-color: #2c2c2c !important;
-    color: #e0e0e0 !important;
-}
-</style>
+  </div>
+{% endif %}
 {% endblock %}
+
+
+
+
+
+
+
+
 
 
 

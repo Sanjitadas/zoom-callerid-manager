@@ -1,168 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Zoom Caller ID Manager</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>{% block title %}BlackBox CID Portal{% endblock %}</title>
 
-  <!-- Bootstrap + icons -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<!-- Bootstrap & icons -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
-  <style>
-    :root{
-      --bg: #f1f5f9;
-      --card-bg: #ffffff;
-      --muted: #6b7280;
-      --accent-1: #1e40af;
-      --accent-2: #2563eb;
-      --text: #0f172a;
-      --sidebar-bg: linear-gradient(180deg, var(--accent-1), var(--accent-2));
-      --shadow: 0 4px 18px rgba(15,23,42,0.06);
-    }
-    :root.dark{
-      --bg: #0b1220;
-      --card-bg: #0f1724;
-      --muted: #9aa6bd;
-      --accent-1: #0ea5a4;
-      --accent-2: #06b6d4;
-      --text: #f8fafc;
-      --sidebar-bg: linear-gradient(180deg, #052b36, #064e63);
-      --shadow: 0 6px 24px rgba(2,6,23,0.6);
-    }
+<style>
+  :root{
+    --brand-blue:#1f3c88;
+    --brand-blue-2:#3b54b1;
+    --muted:#6c757d;
+    --card-radius:12px;
+  }
+  html,body{height:100%}
+  body {
+    background: #f4f6f9;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    margin:0;
+  }
 
-    html,body{height:100%; background:var(--bg); color:var(--text); font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
-    a{ text-decoration:none; color:inherit; }
+  /* top navbar */
+  .topbar {
+    background: white;
+    border-bottom: 1px solid #e9ecef;
+    height:64px;
+    display:flex;
+    align-items:center;
+    padding:0 18px;
+    position:sticky;
+    top:0;
+    z-index:1100;
+  }
 
-    /* Sidebar */
-    .sidebar{
-      width: 260px;
-      height: 100vh;
-      position: fixed;
-      left: 0;
-      top: 0;
-      padding: 22px 18px;
-      background: var(--sidebar-bg);
-      color: #fff;
-      box-shadow: var(--shadow);
-      z-index: 1000;
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-    }
-    .sidebar .brand{ display:flex; gap:12px; align-items:center; justify-content:center; flex-direction:column; }
-    .sidebar .brand h5{ margin:0; font-weight:700; font-size:16px; letter-spacing:0.3px; text-align:center; }
-    .sidebar .navlink{ display:block; padding:10px 12px; border-radius:8px; color:#fff; font-weight:600; margin:6px 0; transition: all .12s ease; }
-    .sidebar .navlink:hover{ transform: translateX(6px); background: rgba(255,255,255,0.07); }
-    .sidebar .navlink.active{ background: rgba(255,255,255,0.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03); }
+  .brand {
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+  }
+  .brand .logo {
+    width:36px; height:36px; border-radius:6px;
+    background: linear-gradient(135deg,var(--brand-blue),var(--brand-blue-2));
+  }
 
-    .main-content{ margin-left:260px; min-height:100vh; display:flex; flex-direction:column; }
-    .topbar{
-      height:64px; background:var(--card-bg); border-bottom:1px solid rgba(0,0,0,0.04);
-      display:flex; align-items:center; justify-content:space-between; padding:0 22px; box-shadow:var(--shadow);
-    }
-    .topbar .left { display:flex; align-items:center; gap:18px; }
-    .topbar h4{ margin:0; font-size:18px; font-weight:700; color:var(--text); }
-    .topbar .controls{ display:flex; gap:12px; align-items:center; }
+  /* profile dropdown */
+  .profile-avatar {
+    width:40px; height:40px; border-radius:50%;
+    background: linear-gradient(135deg,#9aa7ee,#6f8bf1);
+    display:inline-flex; align-items:center; justify-content:center; color:white;
+    font-weight:700;
+  }
 
-    .profile { cursor:pointer; display:flex; align-items:center; gap:10px; position:relative; }
-    .avatar{ width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08)); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; }
-    .profile-menu{
-      position:absolute; right:0; top:54px; min-width:220px; background:var(--card-bg); border-radius:10px; box-shadow:var(--shadow);
-      display:none; overflow:hidden; z-index:1200;
-    }
-    .profile-menu a, .profile-menu p{ display:block; padding:10px 12px; border-bottom:1px solid rgba(0,0,0,0.03); color:var(--text); }
-    .profile-menu a{ font-weight:600; }
-    .profile-menu .muted{ font-size:.9rem; color:var(--muted); }
+  /* layout */
+  .app-layout { display:flex; min-height:calc(100vh - 64px); }
+  .sidebar {
+    width:220px; background:var(--brand-blue); color:#fff; padding-top:18px;
+    flex-shrink:0; transition:width .2s;
+    position:fixed; top:64px; bottom:0; left:0; overflow:auto;
+  }
+  .sidebar .nav-link { color:rgba(255,255,255,0.95); border-radius:8px; padding:10px 14px; margin:6px 8px; display:flex; align-items:center; gap:.6rem; }
+  .sidebar .nav-link:hover, .sidebar .nav-link.active { background:rgba(255,255,255,0.08); text-decoration:none; }
 
-    .flash-area{ position:fixed; right:20px; top:80px; z-index:1500; width:320px; max-width:calc(100% - 40px); }
+  .content {
+    flex:1; margin-left:220px; padding:24px; padding-top:28px;
+  }
 
-    @media(max-width: 992px){
-      .sidebar{ left:-320px; transform:translateX(0); transition:all .2s ease; }
-      .sidebar.show{ left:0; }
-      .main-content{ margin-left:0; }
-      .topbar .left .hamburger{ display:inline-flex; }
-    }
+  .no-sidebar .content { margin-left:0; }
 
-    .card{ background:var(--card-bg); border:0; border-radius:12px; box-shadow:var(--shadow); }
-    .card-body.table-responsive{ max-height:420px; overflow:auto; }
-    .muted-small{ color:var(--muted); font-size:.9rem; }
-    .btn-ghost{ background:transparent; border:1px solid rgba(0,0,0,0.04); }
-  </style>
+  .card-rounded { border-radius: var(--card-radius); }
+
+  @media(max-width:991px){
+    .sidebar { position:fixed; left:-100%; top:64px; z-index:1150; }
+    .sidebar.open { left:0; }
+    .content { margin-left:0; padding:16px; }
+  }
+
+  .flash-auto { transition: opacity .35s ease; }
+</style>
 </head>
-
 <body>
-  {% if session.get('user_email') %}
-  <aside class="sidebar" id="sidebar">
+
+<!-- Topbar -->
+<header class="topbar d-flex justify-content-between align-items-center">
+  <div class="d-flex align-items-center gap-3">
+    <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary d-lg-none" type="button" aria-label="Toggle sidebar">
+      <i class="bi bi-list"></i>
+    </button>
+
     <div class="brand">
-      <div style="font-size:28px">📞</div>
-      <h5>Zoom Caller ID Manager</h5>
-      <div class="muted-small">Manage Zoom outbound Caller IDs</div>
+      <div class="logo" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <div class="d-flex align-items-center gap-3">
+    <div class="dropdown me-2">
+      <a class="text-muted" href="#" id="notifToggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-bell fs-5"></i></a>
+      <ul class="dropdown-menu dropdown-menu-end p-2" aria-labelledby="notifToggle" style="min-width:260px;">
+        <li class="small text-muted px-2 mb-2">Notifications</li>
+        <li><hr class="dropdown-divider"></li>
+        <li class="px-2"><div class="small">No new notifications</div></li>
+      </ul>
+    </div>
+
+    {% if session.get('user_email') %}
+    <div class="dropdown profile-dropdown">
+      <a class="d-flex align-items-center text-decoration-none" href="#" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+        <div class="profile-avatar me-2">
+          {{ session.get('user_email')[0:1]|upper }}
+        </div>
+        <div class="d-none d-md-block text-dark small">
+          {{ session.get('user_email') }}
+        </div>
+      </a>
+
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+        <li class="px-3 py-2">
+          <div class="small text-muted">Signed in as</div>
+          <div class="fw-semibold">{{ session.get('user_email') }}</div>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{{ url_for('main.index') }}">View Profile</a></li>
+        <li><a class="dropdown-item text-danger" href="{{ url_for('main.logout') }}"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+      </ul>
+    </div>
+    {% else %}
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('auth.login') }}">Login</a>
+    {% endif %}
+  </div>
+</header>
+
+<!-- Page layout -->
+<div class="app-layout {% if not session.get('role') or session.get('role') != 'admin' %} no-sidebar {% endif %}">
+  {% if session.get('role') == 'admin' %}
+  <aside id="mainSidebar" class="sidebar">
+    <div class="px-3">
+      <h5 class="text-white ps-2">Zoom CID Manager</h5>
     </div>
 
     <nav class="mt-3">
-      <a href="{{ url_for('main.index') }}" class="navlink {{ 'active' if request.path == url_for('main.index') else '' }}">
-        <i class="bi bi-speedometer2 me-2"></i> Dashboard
+      <a class="nav-link {% if request.endpoint == 'main.index' %}active{% endif %}" href="{{ url_for('main.index') }}">
+        <i class="bi bi-speedometer2"></i> Dashboard
       </a>
-
-      <a href="{{ url_for('main.bulk_update') }}" class="navlink {{ 'active' if request.path == url_for('main.bulk_update') else '' }}">
-        <i class="bi bi-telephone-outbound me-2"></i> Outbound Caller ID Update
+      <a class="nav-link {% if request.endpoint == 'main.manage_admins_access' %}active{% endif %}" href="{{ url_for('main.manage_admins_access') }}">
+        <i class="bi bi-people"></i> Admins & Users
       </a>
-
-      {% if session.get('role') == 'admin' %}
-      <a href="{{ url_for('main.manage_admins_access') }}" class="navlink {{ 'active' if request.path == url_for('main.manage_admins_access') else '' }}">
-        <i class="bi bi-gear-fill me-2"></i> Admins & Access
+      <a class="nav-link {% if request.endpoint == 'main.bulk_update' %}active{% endif %}" href="{{ url_for('main.bulk_update') }}">
+         <i class="bi bi-upc-scan"></i> Outbound Caller ID
       </a>
-      {% endif %}
-
-      <div style="height:10px"></div>
-      <div class="muted-small ps-2">Logged in as</div>
-      <div class="mt-1 ps-2" style="font-weight:700;">{{ session.get('user_email') }}</div>
     </nav>
-
-    <div style="margin-top:auto; padding-top:10px;">
-      <div class="muted-small ps-2 mb-2">Theme</div>
-      <div class="d-flex gap-2 ps-2 pb-2">
-        <button id="themeToggle" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-moon-stars-fill me-2"></i><span id="themeLabel">Dark</span></button>
-      </div>
-    </div>
   </aside>
   {% endif %}
 
-  <div class="main-content">
-    <header class="topbar">
-      <div class="left">
-        <button class="btn btn-ghost hamburger d-none" id="mobileToggle" title="Toggle menu"><i class="bi bi-list"></i></button>
-        <h4>Zoom Caller ID Manager</h4>
-      </div>
-
-      <div class="controls">
-        {% if session.get('user_email') %}
-        <div class="profile me-1" id="profileBtn">
-          <div class="avatar">{{ (session.get('user_email') or '')[:1]|upper }}</div>
-          <div class="d-none d-md-block text-end">
-            <div style="font-weight:700;">{{ session.get('user_email') }}</div>
-            <div class="muted-small">{{ session.get('role')|capitalize }}</div>
-          </div>
-
-          <div class="profile-menu" id="profileMenu" aria-hidden="true">
-            <p class="muted-small"><strong>{{ session.get('role')|capitalize }}</strong></p>
-            <p class="muted-small">{{ session.get('user_email') }}</p>
-            <a href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i> Sign out</a>
-          </div>
-        </div>
-        {% else %}
-          <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Sign in</a>
-        {% endif %}
-      </div>
-    </header>
-
-    <div class="flash-area">
+  <main class="content">
+    <div id="flashContainer">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, message in messages %}
-            <div class="alert alert-{{ category }} d-flex align-items-center" role="alert">
-              <div class="flex-grow-1">{{ message }}</div>
+            <div class="alert alert-{{ 'warning' if category=='warning' else category }} alert-dismissible fade show flash-auto" role="alert">
+              {{ message }}
               <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
           {% endfor %}
@@ -170,71 +168,43 @@
       {% endwith %}
     </div>
 
-    <main class="p-4" id="pageContent">
-      {% block content %}{% endblock %}
-    </main>
-  </div>
+    {% block content %}{% endblock %}
+  </main>
+</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-      // Auto-hide flash messages after 4 seconds
-   setTimeout(function() {
-    const alerts = document.querySelectorAll('.flash-area .alert');
-    alerts.forEach(alert => {
-      // Fade out effect
-      alert.style.transition = 'opacity 0.5s ease';
-      alert.style.opacity = '0';
-      setTimeout(() => alert.remove(), 500); // Remove from DOM after fade
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const sidebar = document.getElementById('mainSidebar');
+  const toggleBtn = document.getElementById('sidebarToggle');
+  if(toggleBtn){
+    toggleBtn.addEventListener('click', ()=> {
+      if(sidebar) sidebar.classList.toggle('open');
     });
-  }, 4000);
-    // --- Theme toggle
-    (function() {
-      const root = document.documentElement;
-      const stored = localStorage.getItem('ui-theme');
-      function applyTheme(mode) {
-        if(mode === 'dark') root.classList.add('dark');
-        else root.classList.remove('dark');
-        localStorage.setItem('ui-theme', mode);
-        document.getElementById('themeLabel') && (document.getElementById('themeLabel').textContent = mode.charAt(0).toUpperCase() + mode.slice(1));
-      }
-      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if(!stored) applyTheme(prefersDark ? 'dark' : 'light');
-      else applyTheme(stored);
+  }
 
-      document.getElementById('themeToggle')?.addEventListener('click', function(){
-        const current = localStorage.getItem('ui-theme') || (prefersDark ? 'dark' : 'light');
-        applyTheme(current === 'dark' ? 'light' : 'dark');
-      });
-    })();
-
-    // --- Sidebar mobile toggle
-    (function(){
-      const mobileToggle = document.getElementById('mobileToggle');
-      const sidebar = document.getElementById('sidebar');
-      mobileToggle?.addEventListener('click', () => sidebar.classList.toggle('show'));
-      document.addEventListener('click', (e) => {
-        if(window.innerWidth <= 992 && sidebar && !sidebar.contains(e.target) && !e.target.closest('.hamburger')) {
-          sidebar.classList.remove('show');
-        }
-      });
-    })();
-
-    // --- Profile menu toggle
-    (function(){
-      const profileBtn = document.getElementById('profileBtn');
-      const profileMenu = document.getElementById('profileMenu');
-      profileBtn?.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        profileMenu.style.display = profileMenu.style.display === 'block' ? 'none' : 'block';
-        profileMenu.setAttribute('aria-hidden', profileMenu.style.display === 'none');
-      });
-      document.addEventListener('click', (ev) => {
-        if(!profileBtn?.contains(ev.target)) profileMenu && (profileMenu.style.display = 'none');
-      });
-    })();
-  </script>
+  window.addEventListener('DOMContentLoaded', ()=> {
+    document.querySelectorAll('.flash-auto').forEach(el=>{
+      setTimeout(()=> {
+        el.classList.remove('show');
+        el.classList.add('hide');
+        try{ el.remove(); } catch(e){}
+      }, 4000);
+    });
+  });
+</script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
