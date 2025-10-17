@@ -455,9 +455,32 @@ def ajax_update_callerid():
 
 
 # ---------------- Bulk Update ----------------
-@main_bp.route('/bulk_update')
+@main_bp.route('/bulk_update', methods=['GET', 'POST'])
+@login_required
 def bulk_update():
+    if request.method == 'POST':
+        # Process bulk update from session or uploaded file
+        bulk_data = session.get('SESSION_BULK_KEY', [])
+        updated_count = 0
+        failed_count = 0
+
+        for record in bulk_data:
+            email = record.get('email')
+            new_cid = record.get('new_caller_id')
+            result = update_line_key(email, new_cid)
+            if result['status'] == 'success':
+                updated_count += 1
+            else:
+                failed_count += 1
+
+        flash(f"Bulk Update Completed: {updated_count} succeeded, {failed_count} failed", 'success')
+        session.pop('SESSION_BULK_KEY', None)  # clear to prevent duplicates
+        return redirect(url_for('main.bulk_update'))
+
+    # GET request → just render the page
     return render_template('bulk_update.html')
+
+
 
 @main_bp.route('/single_update',methods=["POST"])
 def single_update():
