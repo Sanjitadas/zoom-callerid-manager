@@ -8,11 +8,10 @@
             <h2 class="fw-bold">Outbound Caller ID Update</h2>
             <div class="small text-muted">Use single update or upload Excel for bulk updates</div>
         </div>
-        
     </div>
 
     <div class="card card-rounded shadow-sm mb-3 p-3">
-        <form id="single-update-form"  class="row g-2"  method="post" action="{{url_for("main.single_update")}}" >
+        <form id="single-update-form" class="row g-2" method="post" action="{{url_for("main.single_update")}}">
             <div class="col-md-5">
                 <input type="email" id="single-email" name="single-email" class="form-control" placeholder="User email (e.g. user@company.com)" required>
             </div>
@@ -21,24 +20,20 @@
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-primary w-100">Update</button>
-               
             </div>
         </form>
     </div>
 
     <div class="card card-rounded shadow-sm mb-4 p-3">
         <h5 class="mb-3">Bulk Upload</h5>
-        <form id="bulk-upload-form" enctype="multipart/form-data" action="{{url_for("main.bulk_update_file")}}"  method="post" class="row g-2 align-items-center">
+        <form id="bulk-upload-form" enctype="multipart/form-data" action="{{url_for("main.bulk_update_file")}}" method="post" class="row g-2 align-items-center">
             <div class="col-md-6">
                 <input type="file" id="file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>
             </div>
             <div class="col-md-2">
                 <button id="upload-bulk-btn" type="submit" class="btn btn-outline-primary w-100">Upload</button>
             </div>
-           
-            <div class="col-md-2">
-                <button id="download-bulk-btn" type="button" class="btn btn-outline-success w-100" disabled>Download Template</button>
-            </div>
+            
         </form>
 
         <div id="callerid-table-container" class="mt-3">
@@ -51,51 +46,31 @@
     </div>
 
     <div class="card card-rounded shadow-sm p-3">
-        <h5 class="mb-3">Unified Update Report</h5>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Unified Update Report</h5>
+            <input type="text" id="reportSearch" class="form-control form-control-sm"
+                   style="max-width: 250px;" placeholder="Search by email...">
+        </div>
+
         <div id="callerid-report-container">
             {{ render_unified_report()|safe }}
         </div>
     </div>
+
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-
-single_upload_fun(item)
-    alert("hello")
 document.addEventListener('DOMContentLoaded', function(){
-
-    alert("hello sanjita");
-    // Bulk elements
-    const uploadBtn = document.getElementById('upload-bulk-btn');
-    const fileInput = document.getElementById('bulk-file');
-    const applyBtn = document.getElementById('apply-bulk-btn');
-    const downloadBtn = document.getElementById('download-bulk-btn');
-    const tableContainer = document.getElementById('callerid-table-container');
-    // const hasBulkData = { 'true' if session.get('bulk_data') else 'false' };
-    // // Check session data on load (initial state)
-    // {% if session.get('bulk_data') %}
-    //     applyBtn.disabled = false;
-    //     downloadBtn.disabled = false;
-    // {% endif %}
-    const hasBulkData =    session.get('SESSION_BULK_KEY');
-    print("session cache : "+hasBulkData);
-    if (hasBulkData) {
-        applyBtn.disabled = false;
-        downloadBtn.disabled = false;
-    }
 
     // ---- Single Update ----
     const singleForm = document.getElementById('single-update-form');
     singleForm.addEventListener('submit', async (e)=>{
         e.preventDefault();
-        alert("Hello")
         const email = document.getElementById('single-email').value.trim();
         const caller_id = document.getElementById('single-caller-id').value.trim();
         if(!email || !caller_id){ alert('Email and Caller ID are required'); return; }
-        alert(email)
-        alert(caller_id)
 
         try{
             let btn = e.submitter;
@@ -114,7 +89,6 @@ document.addEventListener('DOMContentLoaded', function(){
 
             if(data.status === 'success'){
                 alert("Updated successfully");
-                // Refresh the report partial after success
                 refreshUnifiedReport();
             } else {
                 alert("Failed: " + (data.message || 'server error'));
@@ -128,6 +102,12 @@ document.addEventListener('DOMContentLoaded', function(){
     });
 
     // ---- Bulk Upload ----
+    const uploadBtn = document.getElementById('upload-bulk-btn');
+    const fileInput = document.getElementById('file');
+    const applyBtn = document.getElementById('apply-bulk-btn');
+    const downloadBtn = document.getElementById('download-bulk-btn');
+    const tableContainer = document.getElementById('callerid-table-container');
+
     uploadBtn.addEventListener('click', async ()=>{
         if(!fileInput.files.length){ alert('Select a file first'); return; }
         
@@ -144,7 +124,6 @@ document.addEventListener('DOMContentLoaded', function(){
                 method: "POST", 
                 body: form 
             });
-
             const data = await res.json(); 
             
             uploadBtn.disabled = false;
@@ -155,6 +134,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 applyBtn.disabled = false;
                 downloadBtn.disabled = false;
                 alert(data.message || "File uploaded and data ready for review.");
+                 refreshUnifiedReport();  // <-- refresh unified report
             } else { 
                 alert("Upload failed: " + (data.message || "File parsing error. Check headers and file type.")); 
             }
@@ -168,66 +148,52 @@ document.addEventListener('DOMContentLoaded', function(){
         }
     });
 
-    // ---- Apply Bulk Update ----
-    applyBtn.addEventListener('click', async ()=>{
-        const checks = document.querySelectorAll('input.bulk-select:checked');
-        if(!checks.length){ alert('Select at least one user in bulk list.'); return; }
-        const selected = Array.from(checks).map(c=>c.value);
-        
-        applyBtn.disabled = true;
-        applyBtn.textContent = 'Applying...';
+    document.addEventListener('DOMContentLoaded', function(){
 
-        try{
-            const res = await fetch("{{ url_for('main.ajax_apply_bulk_update') }}", {
-                method: "POST",
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({selected_users:selected})
-            });
-            const data = await res.json();
-            
-            applyBtn.disabled = false;
-            applyBtn.textContent = 'Apply Bulk Update';
+          
+          const reportContainer = document.getElementById('callerid-report-container');
+          const searchInput = document.getElementById('reportSearch');
+          let refreshInterval;
+          // ---- Refresh Report Table ----
+          function refreshUnifiedReport() {
+              fetch("{{ url_for('main.ajax_refresh_report') }}")
+                  .then(res => res.json())
+                  .then(data => {
+                         if(data.status === "success"){
+                             reportContainer.innerHTML = data.updated_report_html;
 
-            if(data.status === 'success'){
-                document.getElementById('callerid-report-container').innerHTML = data.updated_report_html || 'Updated';
-                alert(`Bulk update applied successfully to ${selected.length} users!`);
-                
-                document.getElementById('callerid-table-container').innerHTML = '<div class="text-muted">No bulk data uploaded yet.</div>';
-                applyBtn.disabled = true;
-                downloadBtn.disabled = false; 
-                
-            } else { alert('Bulk update failed: ' + (data.message||'')); }
-        }catch(err){ 
-            console.error(err); 
-            alert('Server error during bulk application.');
-            applyBtn.disabled = false;
-            applyBtn.textContent = 'Apply Bulk Update';
-        }
+                            
+                         }
+                  })
+                  .catch(err => console.error("Report refresh failed", err));
+            }
+
+            // ---- Unified Report Search ----
+            function applySearchFilter() {
+                  const searchValue = searchInput.value.trim().toLowerCase();
+                  const tableRows = reportContainer.querySelectorAll('table tbody tr');
+                  tableRows.forEach(row => {
+                      const emailCell = row.querySelector('td.user-email');
+                      if (emailCell) {
+                         const emailText = emailCell.innerText.trim().toLowerCase();
+                         row.style.display = emailText.includes(searchValue) ? '' : 'none';
+                        }
+                   });
+            }
+
+            searchInput.addEventListener('input', applySearchFilter);
+
+           
+
+           // Refresh every 15 seconds
+           refreshInterval = setInterval(refreshUnifiedReport, 15000);
     });
 
-    // ---- Download Template ----
-    downloadBtn.addEventListener('click', ()=> {
-        window.location.href = "{{ url_for('main.download_bulk_template') }}";
-    });
-    
-    // ---- Refresh Report Table ----
-    function refreshUnifiedReport() {
-        fetch("{{ url_for('main.ajax_refresh_report') }}")
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === "success"){
-                    // 🚨 FIXED: proper innerHTML assignment
-                    document.getElementById('callerid-report-container').innerHTML = data.updated_report_html;
-                }
-            })
-            .catch(err => console.error("Report refresh failed", err));
-    }
-    
-    refreshUnifiedReport();
-    setInterval(refreshUnifiedReport, 15000);
+         refreshUnifiedReport();
 });
 </script>
 {% endblock %}
+
 
 
 

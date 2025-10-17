@@ -15,7 +15,7 @@ import io
 from datetime import datetime, timedelta
 from sqlalchemy import func
 import time, random, logging
-from zoom_api import update_line_key
+from zoom_api import update_line_key, get_zoom_user_id
 from zoom_token import get_access_token
 from settings import logger
 from utils import log_activity, parse_excel, get_allowed_users_status
@@ -23,49 +23,44 @@ import traceback
 import requests
 from werkzeug.utils import secure_filename
 import pdb
-# =========================================================================
-# === FIXES: MISSING DEFINITIONS AND PLACEHOLDERS FOR EXTERNAL DEPENDENCIES ===
-# =========================================================================
+
 
 # 1. Missing Session Constants (Required for Bulk Update Routes)
 SESSION_BULK_KEY = "bulk_update_data"
 SESSION_LAST_UPDATE_TS = "bulk_update_ts"
 
-# 2. Placeholders for Missing Helper Functions (Assumed to be in utils.py/rendering helper)
-# Note: These are minimal mock implementations to make the file runnable.
-# The actual logic resides in your external utils and template rendering setup.
-
-# Updated Zoom API function with real token usage
-
-
+from zoom_api import get_zoom_user_id, get_access_token
 
 def update_zoom_user(email, new_callerid):
-    """
-    Update Zoom Phone Caller ID via Zoom API and return status + reason
-    """
-    ZOOM_API_URL = f"https://api.zoom.us/v2/phone/users/{email}/caller_ids"
+    zoom_user_id = get_zoom_user_id(email)
+    url = f"https://api.zoom.us/v2/phone/users/{zoom_user_id}/settings"
+
     headers = {
-        "Authorization": f"Bearer {get_access_token()}",  # Fixed: call the function
+        "Authorization": f"Bearer {get_access_token()}",
         "Content-Type": "application/json"
     }
-    payload = {"caller_id": new_callerid}
+
+    payload = {
+        "caller_id": {
+            "external_id": new_callerid,
+            "display_external_caller_id": True
+        }
+    }
 
     try:
-        response = requests.patch(ZOOM_API_URL, json=payload, headers=headers)
+        response = requests.patch(url, json=payload, headers=headers)
         response.raise_for_status()
         status, reason = "Success", "Zoom API updated successfully"
-    except requests.exceptions.HTTPError as errh:
-        status, reason = "Failed", str(errh)
-    except requests.exceptions.RequestException as err:
-        status, reason = "Failed", str(err)
+    except requests.exceptions.RequestException as e:
+        status, reason = "Failed", str(e)
 
-    # Store result in BulkUpdateLog for unified reporting
+    # Log the update to BulkUpdateLog
     try:
         bulk_log = BulkUpdateLog()
         bulk_log.updated_by = session.get("current_user") or "SYSTEM"
         bulk_log.email = email
         bulk_log.new_caller_id = new_callerid
-        bulk_log.old_caller_id = "N/A"  # Optionally fetch previous value
+        bulk_log.old_caller_id = "N/A"
         bulk_log.status = status
         bulk_log.reason = reason
         bulk_log.timestamp = datetime.utcnow()
@@ -73,8 +68,9 @@ def update_zoom_user(email, new_callerid):
         db.session.commit()
     except Exception as e:
         logger.error(f"Failed to log bulk update for {email}: {e}")
-    
+
     return status, reason
+
 
 
 # Example bulk update route snippet with stale session check
@@ -231,9 +227,7 @@ def render_table(table_type, data=None):
         """
     return '<div class="text-muted">Table content not available</div>'
 
-# =========================================================================
-# === END OF FIXES ===
-# =========================================================================
+
 
 
 main_bp = Blueprint("main", __name__)
@@ -467,11 +461,13 @@ def bulk_update():
 
 @main_bp.route('/single_update',methods=["POST"])
 def single_update():
-    print("hello")
-    email=request.form.get("single-email")
-    outboundkey=request.form.get("single-caller-id")
-    update_zoom_user(email,outboundkey)
-    return render_template('bulk_update.html')
+    
+    email = request.form.get("single-email")
+    outboundkey = request.form.get("single-caller-id")
+    result = update_line_key(email, outboundkey)  # returns {"status": "success"/"failed", "reason": "..."}
+    
+    flash(f"Update {result['status']}: {result['reason']}", "success" if result['status']=='success' else "danger")
+    return redirect(url_for('main.bulk_update'))
 
 
 @main_bp.route('/bulk_update_file',methods=["POST"])
@@ -539,84 +535,6 @@ def ajax_bulk_upload():
         return jsonify({"status": "error", "message": f"Critical server error during upload: {e}"}), 500
 
 
-# --- routes.py bulk apply update ---
-@main_bp.route("/ajax_apply_bulk_update", methods=["POST"])
-@login_required
-def ajax_apply_bulk_update():
-    try:
-        bulk_data = session.get(SESSION_BULK_KEY, [])
-        if not bulk_data:
-            return jsonify({"status": "error", "message": "No bulk data uploaded."}), 400
-
-        data = request.get_json(force=True) or {}
-        selected_emails = [e.strip().lower() for e in data.get("selected_users", [])]
-        filtered_rows = [
-            r for r in bulk_data if (r.get("email") or "").strip().lower() in selected_emails
-        ]
-
-        # Stale session check
-        last_update_ts = session.get(SESSION_LAST_UPDATE_TS)
-        if last_update_ts:
-            last_dt = datetime.fromisoformat(last_update_ts)
-            if (datetime.utcnow() - last_dt).total_seconds() > 900:
-                return jsonify({"status": "error", "message": "Session expired. Please re-upload the bulk file."}), 400
-
-        results = []
-
-        for row in filtered_rows:
-            email = (row.get("email") or "").strip()
-            cid = str(row.get("caller_id") or "")
-
-            # Previous caller ID
-            old_record = CallerIDUpdate.query.filter(
-                func.lower(CallerIDUpdate.user_id) == email.lower()
-            ).order_by(CallerIDUpdate.updated_ts.desc()).first()
-            old_cid = old_record.caller_id_number if old_record else None
-
-            # Zoom API call
-            status, reason = update_zoom_user(email, cid)
-
-            # Case-insensitive check for boolean
-            success_flag = (status or "").lower() == "success"
-
-            # Add to BulkUpdateLog
-            bulk_log = BulkUpdateLog(
-               email=email,
-               old_caller_id=old_cid,
-               new_caller_id=cid,
-               timestamp=datetime.utcnow(),
-               updated_by=session.get("user_email"),
-               reason=reason,
-               update_type="Bulk",
-               status="Success"  # match the DB column
-            )
-
-            db.session.add(bulk_log)
-            db.session.commit()
-            # Append result for AJAX response
-            results.append({
-                "email": email,
-                "caller_id": cid,
-                "success": success_flag,
-                "reason": reason
-            })
-
-        db.session.commit()
-
-        # Render unified report with correct statuses
-        updated_report_html = render_unified_report(limit=1000)
-
-        return jsonify({
-            "status": "success",
-            "results": results,
-            "updated_report_html": updated_report_html,
-            "message": "Bulk update applied successfully."
-        })
-
-    except Exception as e:
-        logger.exception("ajax_apply_bulk_update error")
-        return jsonify({"status": "error", "message": str(e)}), 500
-    
     app.logger.info(f"Processing bulk row: {email} -> {cid}")
     app.logger.info(f"Zoom API returned: status={status}, reason={reason}")
 
@@ -668,56 +586,6 @@ def ajax_inline_bulk_update():
         return jsonify({"status": "error", "message": f"Server error: {e}"}), 500
 
 
-# ---------------- Download Bulk Template ----------------
-@main_bp.route("/download_bulk_template")
-@login_required
-def download_bulk_template():
-    try:
-        data = session.get(SESSION_BULK_KEY, [])
-        if not data:
-            flash("No bulk data to download.", "warning")
-            # bulk_update route is missing but assumed to exist
-            return redirect(url_for("main.bulk_update") if current_app.url_map.has_rule('main.bulk_update') else url_for("main.index"))
-
-        rows = []
-        for row in data:
-            email = (row.get("email") or "").strip()
-            # Use 'caller_id' key, consistent with parse_excel output
-            cid = str(row.get("caller_id") or "")
-            # Fetch previous caller ID
-            old_record = CallerIDUpdate.query.filter(func.lower(CallerIDUpdate.user_id) == email.lower()) \
-                             .order_by(CallerIDUpdate.updated_ts.desc()).first()
-            old_cid = old_record.caller_id_number if old_record else ""
-            rows.append({
-                "email": email,
-                "old_caller_id": old_cid,
-                "new_caller_id": cid,
-                "status": "Pending",
-                "updated_by": session.get("user_email"),
-                "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-            })
-
-        df = pd.DataFrame(rows)
-
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-            df.to_excel(writer, index=False)
-        output.seek(0)
-
-        session.pop(SESSION_BULK_KEY, None)
-        session.pop(SESSION_LAST_UPDATE_TS, None)
-
-        return send_file(
-            output,
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            as_attachment=True,
-            download_name="bulk_template.xlsx"
-        )
-    except Exception as e:
-        logger.exception("download_bulk_template error")
-        flash(f"Error downloading template: {e}", "danger")
-        # bulk_update route is missing but assumed to exist
-        return redirect(url_for("main.bulk_update") if current_app.url_map.has_rule('main.bulk_update') else url_for("main.index"))
 
 # ---------------- Unified Report AJAX ----------------
 @main_bp.route("/ajax/unified_report", methods=["GET"])

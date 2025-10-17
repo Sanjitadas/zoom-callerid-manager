@@ -50,7 +50,7 @@ def update_line_key(user_email, new_caller_id):
     zoom_user_id = get_zoom_user_id(user_email)
     
     # Step 2: Construct the API URL
-    url = f"{BASE_URL}/phone/users/{zoom_user_id}/settings"
+    url = f"https://api.zoom.us/v2/phone/users/{zoom_user_id}/settings"
     
     # Step 3: Determine the payload (This is the standard structure for Caller ID update)
     # NOTE: 'external_id' should ideally be the Zoom Phone Number ID, not the number string. 
